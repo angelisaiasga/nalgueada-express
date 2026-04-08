@@ -3,80 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo - Nalgueada Express</title>
+    <title>Catálogo Pro - Nalgueada Express</title>
     <style>
-        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; }
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --rojo: #FF9494; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--azul); color: var(--blanco); padding: 20px; }
+        body { background-color: var(--azul); color: var(--blanco); padding: 20px; padding-bottom: 100px; }
 
-        /* Switch de Vista */
-        .view-controls { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
-        .btn-view { background: rgba(255,255,255,0.1); border: 1px solid var(--blanco); color: white; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
-        .btn-view.active { background: var(--amarillo); color: black; border-color: var(--amarillo); }
+        /* Header y Controles */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .view-toggle button { background: rgba(255,255,255,0.1); border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .view-toggle button.active { background: var(--amarillo); color: black; border-color: var(--amarillo); }
 
-        /* Contenedor Maestro */
-        .productos-container { display: grid; gap: 15px; }
+        /* Contenedor dinámico */
+        #catalog { display: grid; gap: 15px; }
+        .grid-view { grid-template-columns: 1fr 1fr; }
+        .list-view { grid-template-columns: 1fr; }
 
-        /* --- ESTILO 1: INDIVIDUAL (LISTA) --- */
-        .view-list { grid-template-columns: 1fr; }
-        .view-list .prod-card { display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        .view-list .prod-img { width: 80px; height: 80px; border-radius: 10px; margin-right: 15px; object-fit: cover; }
-        .view-list .prod-info { flex-grow: 1; }
+        /* Card de Producto */
+        .card { background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; transition: 0.3s; position: relative; }
+        .card img { width: 100%; height: 140px; object-fit: cover; background: #004575; }
+        .card-body { padding: 12px; }
+        .card-title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; }
+        
+        /* Selector de Tipo de Venta (Individual vs Caja) */
+        .sale-type { display: flex; background: rgba(0,0,0,0.2); border-radius: 8px; margin: 10px 0; padding: 2px; }
+        .sale-type label { flex: 1; text-align: center; font-size: 0.7rem; padding: 5px; cursor: pointer; border-radius: 6px; }
+        .sale-type input { display: none; }
+        .sale-type input:checked + span { background: var(--amarillo); color: black; display: block; border-radius: 4px; font-weight: bold; }
 
-        /* --- ESTILO 2: CAJAS (GRID) --- */
-        .view-grid { grid-template-columns: 1fr 1fr; }
-        .view-grid .prod-card { display: flex; flex-direction: column; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
-        .view-grid .prod-img { width: 100%; height: 120px; border-radius: 10px; margin-bottom: 10px; object-fit: cover; }
+        .price-display { color: var(--amarillo); font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; }
+        .stock-tag { font-size: 0.65rem; opacity: 0.7; margin-bottom: 10px; display: block; }
 
-        /* Elementos Comunes */
-        .prod-name { font-weight: bold; font-size: 1rem; margin-bottom: 5px; }
-        .prod-price { color: var(--amarillo); font-weight: bold; margin-bottom: 10px; }
-        .btn-add { background: var(--amarillo); border: none; padding: 8px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+        .btn-add { width: 100%; background: var(--amarillo); border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-add:disabled { background: #666; cursor: not-allowed; }
+
+        /* Carrito Flotante (Footer) */
+        .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--amarillo); color: black; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); z-index: 100; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="view-controls">
-        <button class="btn-view active" onclick="changeView('list', this)">Lista</button>
-        <button class="btn-view" onclick="changeView('grid', this)">Cajas</button>
-    </div>
-
-    <div id="catalog" class="productos-container view-list">
-        <div class="prod-card">
-            <img src="https://via.placeholder.com/150" class="prod-img" alt="Producto">
-            <div class="prod-info">
-                <div class="prod-name">Nalgueada Clásica</div>
-                <div class="prod-price">$85.00</div>
-                <button class="btn-add">AGREGAR +</button>
-            </div>
-        </div>
-
-        <div class="prod-card">
-            <img src="https://via.placeholder.com/150" class="prod-img" alt="Producto">
-            <div class="prod-info">
-                <div class="prod-name">Nalgueada con Queso</div>
-                <div class="prod-price">$95.00</div>
-                <button class="btn-add">AGREGAR +</button>
-            </div>
+    <div class="header">
+        <h3>Nuestros Productos</h3>
+        <div class="view-toggle">
+            <button id="btnList" class="active" onclick="setView('list')">☰</button>
+            <button id="btnGrid" onclick="setView('grid')">▦</button>
         </div>
     </div>
 
-    <script>
-        function changeView(type, btn) {
-            const container = document.getElementById('catalog');
-            const buttons = document.querySelectorAll('.btn-view');
-            
-            buttons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+    <div id="catalog" class="list-view">
+        <p id="loading">Sincronizando existencias...</p>
+    </div>
 
-            if(type === 'grid') {
-                container.classList.remove('view-list');
-                container.classList.add('view-grid');
-            } else {
-                container.classList.remove('view-grid');
-                container.classList.add('view-list');
-            }
-        }
-    </script>
-</body>
-</html>
+    <div id="cartBar" class="cart-bar" style="display: none;" onclick="window.location.href='carrito.html'">
+        <span>🛒 <span id="cartCount">0</span> artículos</span>
+        <span>VER PEDIDO ></span>
+    </div>
