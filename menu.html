@@ -5,68 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menú Principal - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - v2.2.7 */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        body { background-color: #005691; color: #FFFFFF; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--azul); color: var(--blanco); padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
-        /* Encabezado con datos del cliente */
-        .header-status { width: 100%; text-align: center; margin-bottom: 40px; }
-        .header-status p { font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px; }
-        .header-status h2 { color: #FDB813; font-size: 1.8rem; }
-        .whatsapp-tag { display: inline-block; margin-top: 10px; padding: 5px 15px; background: rgba(255,255,255,0.1); border-radius: 20px; font-size: 0.8rem; }
+        .header-status { width: 100%; text-align: center; margin-bottom: 25px; }
+        .header-status h2 { color: var(--amarillo); font-size: 1.8rem; }
 
-        /* Contenedor de Botones Originales */
+        /* Widget de Pedido Pendiente */
+        #orderTracker { 
+            width: 100%; max-width: 400px; background: rgba(255,255,255,0.1); 
+            border: 2px solid var(--amarillo); border-radius: 15px; padding: 15px; 
+            margin-bottom: 25px; display: none; /* Oculto por defecto */
+        }
+        .tracker-title { font-size: 0.8rem; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px; }
+        .tracker-id { font-family: monospace; font-weight: bold; color: var(--amarillo); font-size: 1.1rem; }
+        .tracker-status { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #FDB813; animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* Botones del Menú */
         .btn-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
-        
-        .main-button { width: 100%; padding: 18px; border-radius: 50px; font-weight: bold; text-transform: uppercase; border: none; cursor: pointer; text-decoration: none; text-align: center; transition: 0.3s; font-size: 1.1rem; }
-        
-        .btn-pide { background: #FDB813; color: #000; box-shadow: 0 4px 15px rgba(252, 184, 19, 0.3); }
-        .btn-mas { background: #FFFFFF; color: #005691; }
-        .btn-fiesta { background: #FFFFFF; color: #005691; }
+        .main-button { width: 100%; padding: 18px; border-radius: 50px; font-weight: bold; text-transform: uppercase; border: none; cursor: pointer; text-decoration: none; text-align: center; font-size: 1.1rem; }
+        .btn-pide { background: var(--amarillo); color: #000; }
+        .btn-sec { background: #FFFFFF; color: var(--azul); }
 
-        .main-button:hover { transform: scale(1.03); opacity: 0.9; }
-
-        .footer-actions { margin-top: 50px; }
-        .btn-logout { background: none; border: none; color: #FF9494; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .btn-logout { margin-top: 40px; background: none; border: none; color: #FF9494; cursor: pointer; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div class="header-status">
-        <p>Haciendo pedido como</p>
-        <h2 id="display-name">Identificando...</h2>
-        <div class="whatsapp-tag" id="display-phone">---</div>
+        <p>Hola,</p>
+        <h2 id="display-name">...</h2>
+    </div>
+
+    <div id="orderTracker">
+        <p class="tracker-title">Entrega en curso:</p>
+        <div class="tracker-id" id="trackerID">ID: #000000</div>
+        <div class="tracker-status">
+            <div class="status-dot"></div>
+            <span id="trackerText">Validando pedido...</span>
+        </div>
     </div>
 
     <div class="btn-container">
         <a href="catalogo.html" class="main-button btn-pide">PIDE HOY</a>
-        <a href="promociones.html" class="main-button btn-mas">MAS MEJOR</a>
-        <a href="fiesta.html" class="main-button btn-fiesta">¿PLANEAS UNA FIESTA?</a>
+        <a href="#" class="main-button btn-sec">MAS MEJOR</a>
+        <a href="#" class="main-button btn-sec">¿PLANEAS UNA FIESTA?</a>
     </div>
 
-    <div class="footer-actions">
-        <button onclick="cerrarSesion()" class="btn-logout">CERRAR SESIÓN / CAMBIAR USUARIO</button>
-    </div>
+    <button onclick="cerrarSesion()" class="btn-logout">CERRAR SESIÓN</button>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const nombre = localStorage.getItem('cliente_nombre');
-            const whatsapp = localStorage.getItem('cliente_whatsapp');
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim();
+        const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
-            if (nombre && whatsapp) {
-                document.getElementById('display-name').innerText = nombre;
-                document.getElementById('display-phone').innerText = `📞 ${whatsapp}`;
-            } else {
+        const nombre = localStorage.getItem('cliente_nombre');
+        const whatsapp = localStorage.getItem('cliente_whatsapp');
+
+        async function inicializarMenu() {
+            if (!nombre || !whatsapp) {
                 window.location.replace('identificacion.html');
+                return;
             }
-        });
 
-        function cerrarSesion() {
-            if(confirm('¿Deseas cambiar de usuario?')) {
-                localStorage.clear();
-                window.location.replace('identificacion.html');
+            document.getElementById('display-name').innerText = nombre;
+            
+            // Lógica de Rastreo de Pedido
+            try {
+                const { data: pedidos, error } = await supabaseClient
+                    .from('pedidos')
+                    .select('id, estatus')
+                    .eq('whatsapp_cliente', whatsapp)
+                    .neq('estatus', 'entregado') // No mostrar si ya se entregó
+                    .neq('estatus', 'cancelado')
+                    .order('fecha_creacion', { ascending: false })
+                    .limit(1);
+
+                if (pedidos && pedidos.length > 0) {
+                    const pedidoActivo = pedidos[0];
+                    document.getElementById('orderTracker').style.display = 'block';
+                    document.getElementById('trackerID').innerText = `ID: #${pedidoActivo.id.slice(0,8)}`;
+                    
+                    // Traducción de estatus para el cliente
+                    const statusMap = {
+                        'pendiente': 'Estamos preparando tu pedido...',
+                        'en_ruta': '¡La Peugeot Partner va en camino!',
+                        'atendido': 'Pedido listo para despacho'
+                    };
+                    document.getElementById('trackerText').innerText = statusMap[pedidoActivo.estatus] || 'Procesando...';
+                }
+            } catch (err) {
+                console.error("Error al consultar estatus:", err);
             }
         }
+
+        function cerrarSesion() {
+            localStorage.clear();
+            window.location.replace('identificacion.html');
+        }
+
+        inicializarMenu();
     </script>
 </body>
 </html>
