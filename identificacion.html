@@ -51,10 +51,13 @@
         // PEGA AQUÍ LA MISMA LLAVE eyJ... QUE USASTE EN REGISTRO.HTML
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); 
 
-        const supabaseClient = supabase.createClient(S_URL, S_KEY, {
-            auth: { persistSession: false }
-        });
-
+const supabaseClient = supabase.createClient(S_URL, S_KEY, {
+    auth: {
+        persistSession: false, // OBLIGATORIO para evitar el 401 por sesión vieja
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+    }
+});
         document.getElementById('identificarseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnMain');
