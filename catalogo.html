@@ -120,12 +120,21 @@
         }
 
         function actualizarBarraCarrito() {
-            const bar = document.getElementById('cartBar');
-            if (carrito.length > 0) {
-                bar.style.display = 'flex';
-                document.getElementById('cartCount').innerText = carrito.length;
-            }
-        }
+    const bar = document.getElementById('cartBar');
+    const count = document.getElementById('cartCount');
+    
+    if (carrito.length > 0) {
+        bar.style.display = 'flex';
+        count.innerText = carrito.length;
+        
+        // CORRECCIÓN DE RUTA AQUÍ:
+        bar.onclick = function() {
+            window.location.href = 'carritos.html';
+        };
+    } else {
+        bar.style.display = 'none';
+    }
+}
 
         window.onload = cargarCatalogo;
     </script>
