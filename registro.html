@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - v1.8.0 */
+        /* ADN Visual Unificado - v1.8.2 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         
         body {
@@ -54,7 +54,6 @@
         .btn-submit:disabled { background: #666; cursor: wait; }
 
         #status-log { font-size: 0.8rem; margin-top: 15px; font-weight: bold; min-height: 1.2em; }
-        .loading-spinner { color: #A0D8F1; }
     </style>
 </head>
 <body>
@@ -62,7 +61,7 @@
     <div class="container">
         <img src="logo_nalgueada_solid.png" alt="Nalgueada Express" class="logo">
         <h2>Registro de Cliente</h2>
-        <p class="subtitle">Tus datos serán resguardados en nuestra base de datos segura.</p>
+        <p class="subtitle">Sincronización directa con base de datos segura.</p>
         
         <form id="registroForm">
             <div class="form-group">
@@ -89,13 +88,16 @@
 
     <script>
         const S_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
-        // USA TU LLAVE LARGA eyJ...
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+        // ASEGÚRATE DE PEGAR TU LLAVE eyJ... AQUÍ
+        const S_KEY = 'TU_LLAVE_LARGA_AQUI'; 
 
-        const supabaseClient = supabase.createClient(S_URL, S_KEY);
+        // Configuración de Cliente v1.8.2: Sin persistencia de sesión para evitar bloqueos
+        const supabaseClient = supabase.createClient(S_URL, S_KEY, {
+            auth: { persistSession: false }
+        });
+
         const statusLog = document.getElementById('status-log');
 
-        // Función para obtener coordenadas como Promesa
         function getCoords() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
@@ -113,19 +115,18 @@
             e.preventDefault();
             const btn = document.getElementById('btnMain');
             
-            // UI State: Bloqueo y Feedback
             btn.disabled = true;
             btn.innerText = "PROCESANDO...";
-            statusLog.innerHTML = '<span class="loading-spinner">📡 Obteniendo ubicación GPS...</span>';
+            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Capturando GPS...</span>';
 
             try {
-                // 1. Obtener Coordenadas automáticamente
+                // 1. GPS Automático
                 const coords = await getCoords();
                 const mapsLink = `https://www.google.com/maps?q=${coords}`;
                 
-                statusLog.innerText = "💾 Sincronizando con el servidor...";
+                statusLog.innerText = "💾 Guardando en el servidor...";
 
-                // 2. Preparar objeto de datos
+                // 2. Data Payload
                 const row = {
                     nombre: document.getElementById('nombre').value,
                     whatsapp: document.getElementById('whatsapp').value,
@@ -133,26 +134,28 @@
                     referencia: mapsLink
                 };
 
-                // 3. Insertar en Supabase
+                // 3. Inserción Directa
                 const { error } = await supabaseClient
                     .from('clientes')
                     .insert([row]);
 
                 if (error) throw error;
 
-                // Éxito Total
-                statusLog.innerHTML = '<span style="color: #4BB543;">✅ Registro exitoso. Redirigiendo...</span>';
+                // Éxito
+                statusLog.innerHTML = '<span style="color: #4BB543;">✅ Guardado exitosamente. Redirigiendo...</span>';
                 setTimeout(() => window.location.href = 'menu.html', 1500);
 
             } catch (err) {
+                console.error("Error técnico detallado:", err);
                 btn.disabled = false;
                 btn.innerText = "Finalizar Registro";
                 
                 if (err === "GPS_DENIED") {
-                    statusLog.innerHTML = '<span style="color: #FF9494;">⚠️ Error: Activa el GPS de tu celular para continuar.</span>';
+                    statusLog.innerHTML = '<span style="color: #FF9494;">⚠️ Activa el GPS para registrarte.</span>';
                 } else {
-                    console.error("Error técnico:", err);
-                    statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error ${err.code || 'BD'}: Registro no guardado.</span>`;
+                    // Muestra el código de error de Supabase si existe
+                    const errorMsg = err.message || "Fallo de conexión";
+                    statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error: ${errorMsg}</span>`;
                 }
             }
         });
