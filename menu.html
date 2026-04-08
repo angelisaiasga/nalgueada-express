@@ -75,46 +75,55 @@
         const whatsapp = localStorage.getItem('cliente_whatsapp');
 
         async function inicializarMenu() {
-            if (!nombre || !whatsapp) {
-                window.location.replace('identificacion.html');
-                return;
-            }
+    if (!nombre || !whatsapp) {
+        window.location.replace('identificacion.html');
+        return;
+    }
 
-            document.getElementById('display-name').innerText = nombre;
+    document.getElementById('display-name').innerText = nombre;
 
-            // 1. Validar Carrito Local (Items sin comprar)
-            const carritoLocal = JSON.parse(localStorage.getItem('carrito')) || [];
-            if (carritoLocal.length > 0) {
-                document.getElementById('btnIrCarrito').style.display = 'block';
-            }
+    // 1. Validar Carrito Local
+    const carritoLocal = JSON.parse(localStorage.getItem('carrito')) || [];
+    if (carritoLocal.length > 0) {
+        document.getElementById('btnIrCarrito').style.display = 'block';
+    }
 
-            // 2. Validar Pedido en Curso (Supabase)
-            try {
-                const { data: pedidos, error } = await supabaseClient
-                    .from('pedidos')
-                    .select('id, estatus')
-                    .eq('whatsapp_cliente', whatsapp)
-                    .neq('estatus', 'entregado')
-                    .neq('estatus', 'cancelado')
-                    .order('fecha_creacion', { ascending: false })
-                    .limit(1);
+    // 2. BUSCAR PEDIDO PENDIENTE (Logica Reforzada)
+    try {
+        console.log("🔍 Buscando pedido para:", whatsapp);
+        
+        const { data: pedidos, error } = await supabaseClient
+            .from('pedidos')
+            .select('*') // Traemos todo para debug
+            .eq('whatsapp_cliente', whatsapp)
+            .order('created_at', { ascending: false }); // Usamos created_at de Supabase
 
-                if (pedidos && pedidos.length > 0) {
-                    const p = pedidos[0];
-                    document.getElementById('orderTracker').style.display = 'block';
-                    document.getElementById('trackerID').innerText = `ID: #${p.id.slice(0,8)}`;
-                    
-                    const statusMsg = {
-                        'pendiente': 'Estamos preparando tu pedido...',
-                        'en_ruta': '¡La Peugeot Partner va en camino!',
-                        'atendido': 'Pedido listo en bodega'
-                    };
-                    document.getElementById('trackerText').innerText = statusMsg[p.estatus] || 'Procesando...';
-                }
-            } catch (err) {
-                console.error("Error de rastreo:", err);
-            }
+        if (error) throw error;
+
+        console.log("📦 Pedidos encontrados en DB:", pedidos);
+
+        // Filtramos manualmente los que no están entregados ni cancelados
+        const pedidoActivo = pedidos.find(p => p.estatus !== 'entregado' && p.estatus !== 'cancelado');
+
+        if (pedidoActivo) {
+            console.log("✅ Pedido activo detectado:", pedidoActivo.id);
+            document.getElementById('orderTracker').style.display = 'block';
+            document.getElementById('trackerID').innerText = `ID: #${pedidoActivo.id.slice(0,8)}`;
+            
+            const statusMsg = {
+                'pendiente': 'Estamos preparando tu pedido...',
+                'en_ruta': '¡La Peugeot Partner va en camino!',
+                'atendido': 'Pedido listo para despacho'
+            };
+            document.getElementById('trackerText').innerText = statusMsg[pedidoActivo.estatus] || 'Procesando...';
+        } else {
+            console.log("ℹ️ No hay pedidos activos para este usuario.");
         }
+        
+    } catch (err) {
+        console.error("💥 Error en el rastreo:", err);
+    }
+}
 
         function cerrarSesion() {
             localStorage.clear();
