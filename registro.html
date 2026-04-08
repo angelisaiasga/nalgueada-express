@@ -5,18 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - v2.2.0 */
+        /* ADN Visual Unificado - v2.2.2 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         body { background-color: #005691; color: #FFFFFF; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .container { max-width: 400px; width: 100%; text-align: center; }
         .logo { max-width: 150px; margin-bottom: 20px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3)); }
-        h2 { margin-bottom: 10px; font-weight: 600; }
+        h2 { margin-bottom: 10px; font-weight: 600; color: #FDB813; }
         p.subtitle { margin-bottom: 25px; font-size: 0.9rem; opacity: 0.8; }
         .form-group { margin-bottom: 15px; text-align: left; }
         label { display: block; margin-bottom: 5px; font-size: 0.85rem; opacity: 0.9; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 1rem; background: #FFFFFF; color: #005691; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-submit { display: block; width: 100%; padding: 15px; background: #FDB813; color: #000; border-radius: 50px; font-weight: bold; text-transform: uppercase; margin-top: 25px; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .btn-submit:hover { transform: translateY(-2px); background: #ffc439; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 1rem; background: #FFFFFF; color: #005691; }
+        .btn-submit { display: block; width: 100%; padding: 15px; background: #FDB813; color: #000; border-radius: 50px; font-weight: bold; text-transform: uppercase; margin-top: 25px; border: none; cursor: pointer; transition: all 0.3s ease; }
+        .btn-submit:hover { transform: scale(1.02); background: #ffc439; }
         .btn-submit:disabled { background: #666; cursor: wait; opacity: 0.7; }
         #status-log { font-size: 0.8rem; margin-top: 15px; font-weight: bold; min-height: 1.2em; }
     </style>
@@ -25,8 +25,8 @@
 
     <div class="container">
         <img src="logo_nalgueada_solid.png" alt="Nalgueada Express" class="logo">
-        <h2>Registro de Cliente</h2>
-        <p class="subtitle">Acceso directo a la flota de reparto.</p>
+        <h2 id="ver-check">Registro Oficial de la Flota</h2>
+        <p class="subtitle">Sincronización directa con Supabase Cloud.</p>
         
         <form id="registroForm">
             <div class="form-group">
@@ -49,10 +49,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // INFRAESTRUCTURA v2.2.0 - LLAVE ANON PUBLICADA
-        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
-        // PEGA AQUÍ LA LLAVE eyJ... QUE APARECE EN TU CAPTURA
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdWJhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzg4OTAsImV4cCI6MjA1OTcxNDg5MH0.N0Y8-R5cCI6IkpXVCJ9.eyJpc3MiOiJzdWJhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzg4OTAsImV4cCI6MjA1OTcxNDg5MH0.N0Y8'; 
+        // CONFIGURACIÓN v2.2.2
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co'.trim();
+        // PEGA TU LLAVE eyJ... AQUÍ:
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); 
 
         const supabaseClient = supabase.createClient(S_URL, S_KEY, {
             auth: { persistSession: false }
@@ -76,8 +76,8 @@
             const statusLog = document.getElementById('status-log');
             
             btn.disabled = true;
-            btn.innerText = "SINCRONIZANDO...";
-            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Validando acceso a la base...</span>';
+            btn.innerText = "ENVIANDO...";
+            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Estableciendo handshake seguro...</span>';
 
             try {
                 const coords = await getCoords();
@@ -97,14 +97,14 @@
                 localStorage.setItem('cliente_nombre', payload.nombre);
                 localStorage.setItem('cliente_whatsapp', payload.whatsapp);
 
-                statusLog.innerHTML = '<span style="color: #4BB543;">✅ ¡Registro exitoso! Entrando...</span>';
+                statusLog.innerHTML = '<span style="color: #4BB543;">✅ ¡Registrado! Entrando al menú...</span>';
                 setTimeout(() => window.location.replace('menu.html'), 1000);
 
             } catch (err) {
-                console.error("ERROR TÉCNICO:", err);
+                console.error("DETALLE TÉCNICO:", err);
                 btn.disabled = false;
                 btn.innerText = "Finalizar Registro";
-                statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error ${err.code || '401'}: ${err.message || 'Verifica la llave Anon'}</span>`;
+                statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error ${err.code || '401'}: ${err.message || 'Key Inválida'}</span>`;
             }
         });
     </script>
