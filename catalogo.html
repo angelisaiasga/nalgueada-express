@@ -3,44 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Pro - Nalgueada Express</title>
+    <title>Catálogo - Nalgueada Express</title>
     <style>
         :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--azul); color: var(--blanco); padding: 20px; padding-bottom: 100px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        .view-toggle button { background: rgba(255,255,255,0.1); border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .view-toggle button.active { background: var(--amarillo); color: black; border-color: var(--amarillo); }
-        #catalog { display: grid; gap: 15px; }
-        .grid-view { grid-template-columns: 1fr 1fr; }
-        .list-view { grid-template-columns: 1fr; }
-        .card { background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; padding-bottom: 10px; }
-        .card img { width: 100%; height: 140px; object-fit: cover; }
-        .card-body { padding: 12px; }
-        .sale-type { display: flex; background: rgba(0,0,0,0.2); border-radius: 8px; margin: 10px 0; padding: 2px; font-size: 0.7rem; }
-        .sale-type label { flex: 1; text-align: center; padding: 5px; cursor: pointer; }
-        .sale-type input { display: none; }
-        .sale-type input:checked + span { background: var(--amarillo); color: black; display: block; border-radius: 4px; font-weight: bold; }
-        .price-display { color: var(--amarillo); font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; }
-        .btn-add { width: 100%; background: var(--amarillo); border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--amarillo); color: black; padding: 15px; display: flex; justify-content: space-between; font-weight: bold; z-index: 100; cursor: pointer; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .btn-menu { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; }
+
+        .grid-productos { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .card { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .card img { width: 100%; border-radius: 10px; margin-bottom: 10px; }
+        .card h3 { font-size: 1rem; margin-bottom: 5px; }
+        .card p { color: var(--amarillo); font-weight: bold; margin-bottom: 10px; }
+        
+        .btn-add { width: 100%; background: var(--amarillo); border: none; padding: 10px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+
+        /* Barra de Carrito Flotante */
+        .cart-bar { 
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
+            width: 90%; max-width: 400px; background: var(--amarillo); color: black; 
+            padding: 15px 25px; border-radius: 50px; display: none; 
+            justify-content: space-between; align-items: center; font-weight: bold; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4); cursor: pointer; z-index: 1000;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h3>Nuestros Productos</h3>
-        <div class="view-toggle">
-            <button id="btnList" class="active" onclick="setView('list')">☰</button>
-            <button id="btnGrid" onclick="setView('grid')">▦</button>
+        <a href="menu.html" class="btn-menu">🏠 MENÚ</a>
+        <h2>Catálogo</h2>
+    </div>
+
+    <div id="listaProductos" class="grid-productos">
         </div>
-    </div>
 
-    <div id="catalog" class="list-view">
-        <p id="loading">🚀 Sincronizando existencias...</p>
-    </div>
-
-    <div id="cartBar" class="cart-bar" style="display: none;" onclick="window.location.href='carritos.html'">
+    <div id="cartBar" class="cart-bar" onclick="irAlCarrito()">
         <span>🛒 <span id="cartCount">0</span> artículos</span>
         <span>VER PEDIDO ></span>
     </div>
@@ -48,95 +48,87 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); 
-        const supabaseClient = supabase.createClient(S_URL, S_KEY, { auth: { persistSession: false } });
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // REEMPLAZA CON TU KEY
+        const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
         let productos = [];
         let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
-        async function cargarCatalogo() {
-            console.log("Intentando leer tabla: productos...");
-            const statusMsg = document.getElementById('loading');
+        async function inicializar() {
+            // 1. Validar si ya hay un pedido activo (Guardia de Estado)
+            await validarPedidoActivo();
             
+            // 2. Cargar productos si no hay bloqueos
+            await cargarProductos();
+            actualizarBarraCarrito();
+        }
+
+        async function validarPedidoActivo() {
+            const whatsapp = localStorage.getItem('cliente_whatsapp');
             try {
-                const { data, error } = await supabaseClient
-                    .from('productos')
-                    .select('*'); // Quitamos el filtro 'activo' por ahora para probar
+                const { data: pedidos, error } = await supabaseClient
+                    .from('pedidos')
+                    .select('id, estatus')
+                    .eq('whatsapp_cliente', whatsapp)
+                    .in('estatus', ['pendiente', 'atendido', 'en_ruta']);
 
-                if (error) throw error;
-
-                console.log("Datos recibidos de Supabase:", data);
-                productos = data;
-                renderizar();
-                actualizarBarraCarrito();
-                
+                if (pedidos && pedidos.length > 0) {
+                    alert("Ya tienes un pedido activo (#" + pedidos[0].id.slice(0,5) + "). No puedes realizar otro hasta recibir el anterior.");
+                    window.location.replace('menu.html');
+                }
             } catch (err) {
-                console.error("Error al cargar:", err);
-                statusMsg.innerText = "Error: " + (err.message || "No se pudo conectar");
+                console.error("Error validando concurrencia:", err);
             }
         }
 
-        function setView(view) {
-            console.log("Cambiando vista a:", view);
-            const cat = document.getElementById('catalog');
-            document.getElementById('btnList').classList.toggle('active', view === 'list');
-            document.getElementById('btnGrid').classList.toggle('active', view === 'grid');
-            cat.className = view === 'list' ? 'list-view' : 'grid-view';
-        }
-
-        function renderizar() {
-            const container = document.getElementById('catalog');
-            if (productos.length === 0) {
-                container.innerHTML = "<p>No hay productos en la tabla.</p>";
-                return;
-            }
+        async function cargarProductos() {
+            const { data, error } = await supabaseClient.from('productos').select('*').eq('disponible', true);
+            if (error) { console.error(error); return; }
+            
+            productos = data;
+            const container = document.getElementById('listaProductos');
             container.innerHTML = '';
+
             productos.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <img src="${p.imagen_url || 'https://via.placeholder.com/300x140?text=Producto'}" alt="${p.nombre}">
-                    <div class="card-body">
-                        <div style="font-weight:bold">${p.nombre}</div>
-                        <div class="sale-type">
-                            <label><input type="radio" name="type-${p.id}" value="unit" checked onchange="document.getElementById('p-${p.id}').innerText='$${p.precio_individual}'"><span>Unitario</span></label>
-                            <label><input type="radio" name="type-${p.id}" value="box" onchange="document.getElementById('p-${p.id}').innerText='$${p.precio_caja}'"><span>Caja</span></label>
-                        </div>
-                        <div class="price-display" id="p-${p.id}">$${p.precio_individual}</div>
-                        <button class="btn-add" onclick="agregarAlCarrito('${p.id}')">AGREGAR +</button>
+                container.innerHTML += `
+                    <div class="card">
+                        <img src="${p.imagen_url || 'https://via.placeholder.com/150'}" alt="${p.nombre}">
+                        <h3>${p.nombre}</h3>
+                        <p>$${p.precio_venta_unitario}</p>
+                        <button class="btn-add" onclick="agregar(${p.id})">AGREGAR</button>
                     </div>
                 `;
-                container.appendChild(card);
             });
         }
 
-        function agregarAlCarrito(id) {
+        function agregar(id) {
             const p = productos.find(x => x.id === id);
-            const esCaja = document.querySelector(`input[name="type-${id}"]:checked`).value === 'box';
-            carrito.push({ id: p.id, nombre: p.nombre, precio: esCaja ? p.precio_caja : p.precio_individual, esCaja: esCaja });
+            carrito.push({
+                id: p.id,
+                nombre: p.nombre,
+                precio: p.precio_venta_unitario,
+                esCaja: false
+            });
             localStorage.setItem('carrito', JSON.stringify(carrito));
             actualizarBarraCarrito();
-            alert("Agregado!");
         }
 
         function actualizarBarraCarrito() {
-    const bar = document.getElementById('cartBar');
-    const count = document.getElementById('cartCount');
-    
-    if (carrito.length > 0) {
-        bar.style.display = 'flex';
-        count.innerText = carrito.length;
-        
-        // CORRECCIÓN DE RUTA AQUÍ:
-        bar.onclick = function() {
-            window.location.href = 'carritos.html';
-        };
-    } else {
-        bar.style.display = 'none';
-    }
-}
+            const bar = document.getElementById('cartBar');
+            const count = document.getElementById('cartCount');
+            if (carrito.length > 0) {
+                bar.style.display = 'flex';
+                count.innerText = carrito.length;
+            } else {
+                bar.style.display = 'none';
+            }
+        }
 
-        window.onload = cargarCatalogo;
+        function irAlCarrito() {
+            window.location.href = 'carritos.html';
+        }
+
+        inicializar();
     </script>
 </body>
 </html>
