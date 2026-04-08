@@ -74,7 +74,7 @@
         const nombre = localStorage.getItem('cliente_nombre');
         const whatsapp = localStorage.getItem('cliente_whatsapp');
 
-        async function inicializarMenu() {
+async function inicializarMenu() {
     if (!nombre || !whatsapp) {
         window.location.replace('identificacion.html');
         return;
@@ -82,46 +82,48 @@
 
     document.getElementById('display-name').innerText = nombre;
 
-    // 1. Validar Carrito Local
+    // 1. Verificar Carrito Local
     const carritoLocal = JSON.parse(localStorage.getItem('carrito')) || [];
     if (carritoLocal.length > 0) {
         document.getElementById('btnIrCarrito').style.display = 'block';
     }
 
-    // 2. BUSCAR PEDIDO PENDIENTE (Logica Reforzada)
+    // 2. CONSULTA REFORZADA DE PEDIDOS
     try {
-        console.log("🔍 Buscando pedido para:", whatsapp);
-        
+        console.log("intentando rastrear para:", whatsapp); // DEBUG 1
+
         const { data: pedidos, error } = await supabaseClient
             .from('pedidos')
-            .select('*') // Traemos todo para debug
+            .select('*')
             .eq('whatsapp_cliente', whatsapp)
-            .order('created_at', { ascending: false }); // Usamos created_at de Supabase
+            .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error("Error en query Supabase:", error);
+            return;
+        }
 
-        console.log("📦 Pedidos encontrados en DB:", pedidos);
+        console.log("Pedidos encontrados en DB:", pedidos); // DEBUG 2
 
-        // Filtramos manualmente los que no están entregados ni cancelados
+        // Buscamos el primero que NO esté entregado ni cancelado
         const pedidoActivo = pedidos.find(p => p.estatus !== 'entregado' && p.estatus !== 'cancelado');
 
         if (pedidoActivo) {
-            console.log("✅ Pedido activo detectado:", pedidoActivo.id);
+            console.log("✅ Mostrando Tracker para ID:", pedidoActivo.id);
             document.getElementById('orderTracker').style.display = 'block';
-            document.getElementById('trackerID').innerText = `ID: #${pedidoActivo.id.slice(0,8)}`;
+            document.getElementById('trackerID').innerText = `FOLIO: #${pedidoActivo.id.slice(0,8)}`;
             
             const statusMsg = {
                 'pendiente': 'Estamos preparando tu pedido...',
-                'en_ruta': '¡La Peugeot Partner va en camino!',
-                'atendido': 'Pedido listo para despacho'
+                'atendido': 'Pedido listo en sucursal',
+                'en_ruta': '¡La Peugeot Partner va en camino!'
             };
             document.getElementById('trackerText').innerText = statusMsg[pedidoActivo.estatus] || 'Procesando...';
         } else {
-            console.log("ℹ️ No hay pedidos activos para este usuario.");
+            console.log("ℹ️ No se detectaron pedidos activos.");
         }
-        
     } catch (err) {
-        console.error("💥 Error en el rastreo:", err);
+        console.error("Fallo crítico en inicialización:", err);
     }
 }
 
