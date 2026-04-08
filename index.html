@@ -1,0 +1,109 @@
+  <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido - Nalgueada Express</title>
+    <style>
+        /* ADN Visual Unificado v1.1 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #005691; /* Azul Nalgueada Unificado */
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            max-width: 220px;
+            height: auto;
+            margin-bottom: 20px;
+            /* Se mantiene limpio sin filtros para evitar la 'caja' */
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .instrucciones {
+            font-size: 1rem;
+            font-weight: 300;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .menu-opciones {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            background-color: #FFFFFF;
+            color: #005691;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            /* EFECTOS REESTABLECIDOS */
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Efecto al presionar o pasar el mouse (Igual al menú) */
+        .btn:active, .btn:hover {
+            transform: scale(0.98);
+            background-color: #f0f0f0;
+        }
+
+        /* Botón de Cliente Recurrente - Amarillo Cheve */
+        .btn-cliente {
+            background-color: #FDB813;
+            color: #000000;
+        }
+
+        /* Hover específico para el amarillo */
+        .btn-cliente:hover {
+            background-color: #FFFFFF;
+            color: #FDB813;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="logo_nalgueada_solid.png" alt="Logo Nalgueada Express" class="logo">
+        
+        <h2>¡Qué onda!</h2>
+        <p class="instrucciones">Dinos quién eres para empezar el servicio:</p>
+
+        <div class="menu-opciones">
+            <a href="menu.html" class="btn btn-cliente">Ya soy cliente</a>
+            <a href="#" class="btn">Regístrame</a>
+        </div>
+    </div>
+
+</body>
+</html>
