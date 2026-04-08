@@ -1,61 +1,80 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Pro - Nalgueada Express</title>
-    <style>
-        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --rojo: #FF9494; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--azul); color: var(--blanco); padding: 20px; padding-bottom: 100px; }
+<script>
+    const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // ASEGÚRATE DE PEGAR LA LLAVE AQUÍ
 
-        /* Header y Controles */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        .view-toggle button { background: rgba(255,255,255,0.1); border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .view-toggle button.active { background: var(--amarillo); color: black; border-color: var(--amarillo); }
+    const supabaseClient = supabase.createClient(S_URL, S_KEY, {
+        auth: { persistSession: false }
+    });
 
-        /* Contenedor dinámico */
-        #catalog { display: grid; gap: 15px; }
-        .grid-view { grid-template-columns: 1fr 1fr; }
-        .list-view { grid-template-columns: 1fr; }
+    let productos = [];
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
-        /* Card de Producto */
-        .card { background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; transition: 0.3s; position: relative; }
-        .card img { width: 100%; height: 140px; object-fit: cover; background: #004575; }
-        .card-body { padding: 12px; }
-        .card-title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; }
+    async function cargarCatalogo() {
+        console.log("🚀 Iniciando carga de catálogo...");
+        const statusMsg = document.getElementById('loading');
         
-        /* Selector de Tipo de Venta (Individual vs Caja) */
-        .sale-type { display: flex; background: rgba(0,0,0,0.2); border-radius: 8px; margin: 10px 0; padding: 2px; }
-        .sale-type label { flex: 1; text-align: center; font-size: 0.7rem; padding: 5px; cursor: pointer; border-radius: 6px; }
-        .sale-type input { display: none; }
-        .sale-type input:checked + span { background: var(--amarillo); color: black; display: block; border-radius: 4px; font-weight: bold; }
+        try {
+            const { data, error } = await supabaseClient
+                .from('productos')
+                .select('*')
+                .eq('activo', true);
 
-        .price-display { color: var(--amarillo); font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; }
-        .stock-tag { font-size: 0.65rem; opacity: 0.7; margin-bottom: 10px; display: block; }
+            if (error) {
+                console.error("❌ Error de Supabase:", error);
+                statusMsg.innerText = "Error de conexión: " + error.message;
+                return;
+            }
 
-        .btn-add { width: 100%; background: var(--amarillo); border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-add:disabled { background: #666; cursor: not-allowed; }
+            console.log("📦 Datos recibidos:", data);
 
-        /* Carrito Flotante (Footer) */
-        .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--amarillo); color: black; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; box-shadow: 0 -5px 15px rgba(0,0,0,0.3); z-index: 100; cursor: pointer; }
-    </style>
-</head>
-<body>
+            if (!data || data.length === 0) {
+                console.warn("⚠️ Tabla vacía o sin productos activos.");
+                statusMsg.innerText = "No hay productos disponibles por ahora.";
+                return;
+            }
 
-    <div class="header">
-        <h3>Nuestros Productos</h3>
-        <div class="view-toggle">
-            <button id="btnList" class="active" onclick="setView('list')">☰</button>
-            <button id="btnGrid" onclick="setView('grid')">▦</button>
-        </div>
-    </div>
+            productos = data;
+            renderizar();
+            actualizarBarraCarrito();
+            
+        } catch (err) {
+            console.error("💥 Error crítico de ejecución:", err);
+            statusMsg.innerText = "Fallo en el script. Revisa la consola.";
+        }
+    }
 
-    <div id="catalog" class="list-view">
-        <p id="loading">Sincronizando existencias...</p>
-    </div>
+    function renderizar() {
+        const container = document.getElementById('catalog');
+        container.innerHTML = ''; // Limpiamos el mensaje de carga
 
-    <div id="cartBar" class="cart-bar" style="display: none;" onclick="window.location.href='carrito.html'">
-        <span>🛒 <span id="cartCount">0</span> artículos</span>
-        <span>VER PEDIDO ></span>
-    </div>
+        productos.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <img src="${p.imagen_url || 'https://via.placeholder.com/300x140?text=Nalgueada'}" alt="${p.nombre}">
+                <div class="card-body">
+                    <div class="card-title">${p.nombre}</div>
+                    <span class="stock-tag">Disponibles: ${p.stock_total_piezas} piezas</span>
+                    <div class="sale-type">
+                        <label>
+                            <input type="radio" name="type-${p.id}" value="unit" checked onchange="updatePrice('${p.id}', ${p.precio_individual})">
+                            <span>Individual</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="type-${p.id}" value="box" onchange="updatePrice('${p.id}', ${p.precio_caja})">
+                            <span>Caja</span>
+                        </label>
+                    </div>
+                    <div class="price-display" id="price-${p.id}">$${p.precio_individual}</div>
+                    <button class="btn-add" onclick="agregarAlCarrito('${p.id}')">AGREGAR +</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+        console.log("🎨 Renderizado completado.");
+    }
+
+    // ... (Mantén las funciones de updatePrice, agregarAlCarrito y actualizarBarraCarrito) ...
+
+    window.onload = cargarCatalogo; // Forzamos ejecución al cargar ventana
+</script>
