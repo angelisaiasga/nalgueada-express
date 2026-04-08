@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Nalgueada Express</title>
+    <style>
+        /* ADN Visual Unificado v1.2 */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        
+        body {
+            background-color: #005691;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container { max-width: 400px; width: 100%; }
+
+        .logo { max-width: 150px; margin-bottom: 20px; }
+
+        h2 { margin-bottom: 25px; font-weight: 600; }
+
+        /* Estilos del Formulario */
+        .form-group { margin-bottom: 20px; text-align: left; }
+
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.9; }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1rem;
+            background-color: #FFFFFF;
+            color: #005691;
+        }
+
+        /* Botón de Ubicación */
+        .btn-geo {
+            background-color: #A0D8F1;
+            color: #005691;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .btn-enviar {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #FDB813; /* Amarillo Cheve */
+            color: #000;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 30px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-enviar:active { transform: scale(0.98); }
+        
+        #status-geo { font-size: 0.75rem; margin-top: 5px; color: #A0D8F1; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="logo_nalgueada_solid.png" alt="Logo" class="logo">
+        <h2>Únete a la flota</h2>
+        
+        <form id="registroForm">
+            <div class="form-group">
+                <label>Nombre completo</label>
+                <input type="text" id="nombre" placeholder="Ej. Angel Alvarez" required>
+            </div>
+
+            <div class="form-group">
+                <label>WhatsApp</label>
+                <input type="tel" id="whatsapp" placeholder="55 1234 5678" required>
+            </div>
+
+            <div class="form-group">
+                <label>Dirección (Calle y No.)</label>
+                <input type="text" id="direccion" placeholder="Calle central #12..." required>
+                <button type="button" class="btn-geo" onclick="obtenerUbicacion()">📍 Fijar mi ubicación GPS</button>
+                <p id="status-geo"></p>
+                <input type="hidden" id="coords">
+            </div>
+
+            <button type="submit" class="btn-enviar">Finalizar Registro</button>
+        </form>
+    </div>
+
+    <script>
+        function obtenerUbicacion() {
+            const status = document.getElementById('status-geo');
+            if (!navigator.geolocation) {
+                status.innerText = "Geolocalización no soportada";
+                return;
+            }
+            status.innerText = "Localizando...";
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                document.getElementById('coords').value = `${lat},${lon}`;
+                status.innerText = "✅ Ubicación fijada correctamente";
+            }, () => {
+                status.innerText = "❌ No se pudo obtener la ubicación";
+            });
+        }
+    </script>
+</body>
+</html>

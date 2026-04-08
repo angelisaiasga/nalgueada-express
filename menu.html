@@ -1,0 +1,97 @@
+     <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nalgueada Express - Del refri a tu puerta (v2.0)</title>
+    <style>
+        /* CSS Estructura - v2.0 Color Sólido Unificado */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            /* COLOR UNIFORME VALIDADOS: #005691 */
+            background-color: #005691; 
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden; /* Evita scrolls innecesarios */
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            max-width: 250px;
+            height: auto;
+            margin-bottom: 20px;
+            /* Eliminamos sombras o filtros que puedan generar 'cajas' */
+            filter: none;
+            box-shadow: none;
+        }
+
+        .slogan {
+            font-size: 1.2rem;
+            font-weight: 300;
+            margin-bottom: 40px;
+            letter-spacing: 1px;
+        }
+
+        .menu-opciones {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            background-color: #FFFFFF;
+            color: #005691;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .btn:active, .btn:hover {
+            transform: scale(0.98);
+            background-color: #f0f0f0;
+        }
+
+        .btn-principal {
+            background-color: #FDB813; /* Amarillo Cheve */
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="logo_nalgueada_solid.png" alt="Logo Nalgueada Express v2.0" class="logo">
+        
+        <p class="slogan">Del refri a tu puerta</p>
+
+        <div class="menu-opciones">
+            <a href="#" class="btn btn-principal">Pide hoy</a>
+            <a href="#" class="btn">mas mejor</a>
+            <a href="#" class="btn">¿Planeas una fiesta?</a>
+        </div>
+    </div>
+
+</body>
+</html>
