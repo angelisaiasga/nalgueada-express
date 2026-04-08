@@ -1,97 +1,52 @@
-     <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nalgueada Express - Del refri a tu puerta (v2.0)</title>
+    <title>Menú - Nalgueada Express</title>
     <style>
-        /* CSS Estructura - v2.0 Color Sólido Unificado */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-
-        body {
-            /* COLOR UNIFORME VALIDADOS: #005691 */
-            background-color: #005691; 
-            color: #FFFFFF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: #005691; color: #FFFFFF; padding: 0; }
+        
+        /* Encabezado de Identidad */
+        .user-header {
+            background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%);
             padding: 20px;
-            overflow: hidden; /* Evita scrolls innecesarios */
+            text-align: center;
+            border-bottom: 2px solid #FDB813;
         }
+        .user-header p { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+        .user-header h3 { color: #FDB813; font-size: 1.3rem; margin: 5px 0; }
+        .user-header span { font-size: 0.9rem; background: #003d66; padding: 2px 10px; border-radius: 10px; }
 
-        .container {
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .logo {
-            max-width: 250px;
-            height: auto;
-            margin-bottom: 20px;
-            /* Eliminamos sombras o filtros que puedan generar 'cajas' */
-            filter: none;
-            box-shadow: none;
-        }
-
-        .slogan {
-            font-size: 1.2rem;
-            font-weight: 300;
-            margin-bottom: 40px;
-            letter-spacing: 1px;
-        }
-
-        .menu-opciones {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 15px 20px;
-            background-color: #FFFFFF;
-            color: #005691;
-            text-decoration: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: transform 0.2s ease, background-color 0.2s ease;
-            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
-        }
-
-        .btn:active, .btn:hover {
-            transform: scale(0.98);
-            background-color: #f0f0f0;
-        }
-
-        .btn-principal {
-            background-color: #FDB813; /* Amarillo Cheve */
-            color: #000000;
-        }
+        .content { padding: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <img src="logo_nalgueada_solid.png" alt="Logo Nalgueada Express v2.0" class="logo">
-        
-        <p class="slogan">Del refri a tu puerta</p>
-
-        <div class="menu-opciones">
-            <a href="#" class="btn btn-principal">Pide hoy</a>
-            <a href="#" class="btn">mas mejor</a>
-            <a href="#" class="btn">¿Planeas una fiesta?</a>
-        </div>
+    <div class="user-header">
+        <p>Cliente Registrado</p>
+        <h3 id="display-name">...</h3>
+        <span id="display-phone">...</span>
     </div>
 
+    <div class="content">
+        <h2>Bienvenido a la Flota</h2>
+        <p style="margin-top: 20px; opacity: 0.7;">Selecciona tus productos abajo.</p>
+    </div>
+
+    <script>
+        // Lógica de recuperación de sesión
+        const nombre = localStorage.getItem('cliente_nombre');
+        const whatsapp = localStorage.getItem('cliente_whatsapp');
+
+        if (nombre && whatsapp) {
+            document.getElementById('display-name').innerText = nombre;
+            document.getElementById('display-phone').innerText = `📞 ${whatsapp}`;
+        } else {
+            // Protección de ruta: Si no hay registro, lo regresamos
+            window.location.replace('registro.html');
+        }
+    </script>
 </body>
 </html>
