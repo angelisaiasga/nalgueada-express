@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identificación - Nalgueada Express</title>
+    <style>
+        /* ADN Visual Unificado v1.9.1 */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: #005691; color: #FFFFFF; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { max-width: 400px; width: 100%; text-align: center; }
+        .logo { max-width: 120px; margin-bottom: 20px; }
+        h2 { margin-bottom: 10px; }
+        p { margin-bottom: 25px; opacity: 0.8; font-size: 0.9rem; }
+        
+        input { 
+            width: 100%; padding: 15px; border-radius: 10px; border: none; 
+            font-size: 1.2rem; text-align: center; background: #FFFFFF; color: #005691;
+            margin-bottom: 20px;
+        }
+
+        .btn-verificar {
+            width: 100%; padding: 15px; background: #FDB813; color: #000;
+            border-radius: 50px; font-weight: bold; border: none; cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-verificar:disabled { background: #666; cursor: wait; }
+        #msg { margin-top: 15px; font-size: 0.85rem; font-weight: bold; }
+        .link-registro { margin-top: 20px; display: block; color: #A0D8F1; text-decoration: none; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="logo_nalgueada_solid.png" class="logo">
+        <h2>¡Hola de nuevo!</h2>
+        <p>Ingresa tu WhatsApp para recuperar tu cuenta.</p>
+        
+        <input type="tel" id="tel-input" placeholder="5512345678" maxlength="10">
+        
+        <button id="btn-identificar" class="btn-verificar" onclick="identificarCliente()">Entrar</button>
+        
+        <div id="msg"></div>
+        
+        <a href="registro.html" class="link-registro">No tengo cuenta, quiero registrarme</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        const S_KEY = 'sb_publishable_vY2mFGcPgE8FZ77z8XfQNQ_MyB3b68f12cc1214040f9000f68f17665796a583e'; 
+        const _supabase = supabase.createClient(S_URL, S_KEY);
+
+        async function identificarCliente() {
+            const tel = document.getElementById('tel-input').value;
+            const btn = document.getElementById('btn-identificar');
+            const msg = document.getElementById('msg');
+
+            if (tel.length < 10) {
+                msg.innerHTML = "⚠️ Ingresa un número válido de 10 dígitos.";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "BUSCANDO...";
+            msg.innerHTML = "";
+
+            try {
+                // Consulta por WhatsApp
+                const { data, error } = await _supabase
+                    .from('clientes')
+                    .select('nombre, whatsapp')
+                    .eq('whatsapp', tel)
+                    .single(); // Esperamos solo un resultado
+
+                if (error || !data) {
+                    msg.innerHTML = "❌ No encontramos tu número. Por favor regístrate.";
+                    btn.disabled = false;
+                    btn.innerText = "Entrar";
+                    return;
+                }
+
+                // Si existe, guardamos en LocalStorage y mandamos al menú
+                localStorage.setItem('cliente_nombre', data.nombre);
+                localStorage.setItem('cliente_whatsapp', data.whatsapp);
+
+                msg.innerHTML = `<span style="color: #4BB543;">✅ ¡Hola ${data.nombre}! Entrando...</span>`;
+                setTimeout(() => window.location.replace('menu.html'), 1200);
+
+            } catch (err) {
+                msg.innerHTML = "❌ Error de conexión. Intenta más tarde.";
+                btn.disabled = false;
+                btn.innerText = "Entrar";
+            }
+        }
+    </script>
+</body>
+</html>
