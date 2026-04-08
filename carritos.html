@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cierre de Pedido - Nalgueada Express</title>
+    <style>
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --rojo: #ff4d4d; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--azul); color: var(--blanco); padding: 20px; }
+        
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+        .btn-back { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 0.8rem; }
+
+        .item-carrito { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .item-nombre { font-weight: bold; }
+        .item-meta { font-size: 0.75rem; color: var(--amarillo); margin-top: 4px; }
+        .btn-remove { background: none; border: none; color: var(--rojo); font-weight: bold; cursor: pointer; font-size: 1.2rem; }
+
+        .resumen { margin-top: 30px; border-top: 2px solid var(--amarillo); padding-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: bold; margin-bottom: 25px; }
+
+        /* ELIMINADA CUALQUIER REFERENCIA A WHATSAPP */
+        .btn-finalizar-sistema { width: 100%; background: var(--amarillo); color: black; border: none; padding: 18px; border-radius: 50px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .btn-finalizar-sistema:disabled { background: #666; cursor: not-allowed; }
+        
+        .empty-cart { text-align: center; margin-top: 60px; opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="catalogo.html" class="btn-back"> < VOLVER</a>
+        <h2>Resumen de Pedido</h2>
+    </div>
+
+    <div id="listaCarrito"></div>
+
+    <div id="areaResumen" style="display: none;">
+        <div class="resumen">
+            <div class="total-row">
+                <span>TOTAL:</span>
+                <span id="txtTotal">$0.00</span>
+            </div>
+            <button id="btnFinalizarPedido" class="btn-finalizar-sistema" onclick="enviarPedidoASupabase()">
+                CONFIRMAR Y REGISTRAR PEDIDO
+            </button>
+        </div>
+    </div>
+
+    <div id="carritoVacio" class="empty-cart" style="display: none;">
+        <p>Tu carrito está vacío.</p>
+        <br>
+        <a href="catalogo.html" style="color: var(--amarillo); font-weight: bold; text-decoration: none;">VOLVER AL CATÁLOGO</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // Reemplazar con tu llave eyJ...
+        const supabaseClient = supabase.createClient(S_URL, S_KEY);
+
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+
+        function renderCarrito() {
+            const container = document.getElementById('listaCarrito');
+            const resumen = document.getElementById('areaResumen');
+            const vacio = document.getElementById('carritoVacio');
+
+            if (carrito.length === 0) {
+                container.innerHTML = '';
+                resumen.style.display = 'none';
+                vacio.style.display = 'block';
+                return;
+            }
+
+            vacio.style.display = 'none';
+            resumen.style.display = 'block';
+            container.innerHTML = '';
+
+            let total = 0;
+            carrito.forEach((item, index) => {
+                total += parseFloat(item.precio);
+                const div = document.createElement('div');
+                div.className = 'item-carrito';
+                div.innerHTML = `
+                    <div>
+                        <div class="item-nombre">${item.nombre}</div>
+                        <div class="item-meta">${item.esCaja ? '📦 CAJA' : '🍺 UNITARIO'} - $${item.precio}</div>
+                    </div>
+                    <button class="btn-remove" onclick="eliminar(${index})">✕</button>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('txtTotal').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function eliminar(index) {
+            carrito.splice(index, 1);
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            renderCarrito();
+        }
+
+        async function enviarPedidoASupabase() {
+            const btn = document.getElementById('btnFinalizarPedido');
+            btn.disabled = true;
+            btn.innerText = "💾 REGISTRANDO EN NUBE...";
+
+            const nombre = localStorage.getItem('cliente_nombre');
+            const whatsapp = localStorage.getItem('cliente_whatsapp');
+
+            try {
+                const totalVenta = carrito.reduce((acc, item) => acc + parseFloat(item.precio), 0);
+                
+                // 1. Registro del Pedido (Header)
+                const { data: pedido, error: errorPedido } = await supabaseClient
+                    .from('pedidos')
+                    .insert([{
+                        whatsapp_cliente: whatsapp,
+                        nombre_cliente: nombre,
+                        total_venta: totalVenta,
+                        estatus: 'pendiente'
+                    }])
+                    .select()
+                    .single();
+
+                if (errorPedido) throw errorPedido;
+
+                // 2. Registro del Detalle
+                const detalles = carrito.map(item => ({
+                    pedido_id: pedido.id,
+                    producto_id: item.id,
+                    cantidad_pedida: 1,
+                    es_caja: item.esCaja,
+                    precio_unitario_aplicado: item.precio,
+                    subtotal: item.precio
+                }));
+
+                const { error: errorDetalles } = await supabaseClient
+                    .from('detalle_pedidos')
+                    .insert(detalles);
+
+                if (errorDetalles) throw errorDetalles;
+
+                // 3. Limpieza y Redirección
+                localStorage.removeItem('carrito');
+                alert(`✅ Pedido #${pedido.id.slice(0,8)} registrado exitosamente.`);
+                window.location.replace('menu.html');
+
+            } catch (err) {
+                console.error("Error de Inserción:", err);
+                alert("Hubo un fallo en la conexión con la base de datos.");
+                btn.disabled = false;
+                btn.innerText = "REINTENTAR REGISTRO";
+            }
+        }
+
+        renderCarrito();
+    </script>
+</body>
+</html>
