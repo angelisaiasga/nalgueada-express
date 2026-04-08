@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Carrito - Nalgueada Express</title>
+    <style>
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --rojo: #ff4d4d; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--azul); color: var(--blanco); padding: 20px; }
+        
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+        .btn-back { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 0.8rem; }
+
+        .item-carrito { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
+        .item-info { flex-grow: 1; }
+        .item-nombre { font-weight: bold; }
+        .item-detalle { font-size: 0.75rem; opacity: 0.8; color: var(--amarillo); }
+        .btn-remove { background: none; border: none; color: var(--rojo); font-weight: bold; cursor: pointer; padding: 10px; }
+
+        .resumen { margin-top: 30px; border-top: 2px solid var(--amarillo); padding-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; font-size: 1.4rem; font-weight: bold; margin-bottom: 20px; }
+
+        .btn-confirmar { width: 100%; background: var(--amarillo); color: black; border: none; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .empty-msg { text-align: center; margin-top: 50px; opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="catalogo.html" class="btn-back"> < Volver</a>
+        <h2>Tu Pedido</h2>
+    </div>
+
+    <div id="listaCarrito">
+        </div>
+
+    <div id="areaResumen" style="display: none;">
+        <div class="resumen">
+            <div class="total-row">
+                <span>Total:</span>
+                <span id="txtTotal">$0.00</span>
+            </div>
+            <button class="btn-confirmar" onclick="confirmarPedido()">CONFIRMAR PEDIDO VIA WHATSAPP</button>
+        </div>
+    </div>
+
+    <div id="carritoVacio" class="empty-msg" style="display: none;">
+        <p>Tu carrito está vacío.</p>
+        <br>
+        <a href="catalogo.html" style="color: var(--amarillo)">Ir a comprar algo</a>
+    </div>
+
+    <script>
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        const listaDiv = document.getElementById('listaCarrito');
+        const resumenDiv = document.getElementById('areaResumen');
+        const vacioDiv = document.getElementById('carritoVacio');
+
+        function renderCarrito() {
+            if (carrito.length === 0) {
+                listaDiv.innerHTML = '';
+                resumenDiv.style.display = 'none';
+                vacioDiv.style.display = 'block';
+                return;
+            }
+
+            vacioDiv.style.display = 'none';
+            resumenDiv.style.display = 'block';
+            listaDiv.innerHTML = '';
+
+            let total = 0;
+            carrito.forEach((item, index) => {
+                total += parseFloat(item.precio);
+                const div = document.createElement('div');
+                div.className = 'item-carrito';
+                div.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-nombre">${item.nombre}</div>
+                        <div class="item-detalle">${item.esCaja ? '📦 Pack/Caja' : '単品 Individual'} - $${item.precio}</div>
+                    </div>
+                    <button class="btn-remove" onclick="eliminar(${index})">✕</button>
+                `;
+                listaDiv.appendChild(div);
+            });
+
+            document.getElementById('txtTotal').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function eliminar(index) {
+            carrito.splice(index, 1);
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            renderCarrito();
+        }
+
+        function confirmarPedido() {
+            // Recuperamos datos del cliente guardados en el registro/identificación
+            const cliente = JSON.parse(localStorage.getItem('userSession')) || { nombre: 'Cliente', whatsapp: '' };
+            let total = 0;
+            let msg = `*Nalgueada Express - Nuevo Pedido*%0A%0A`;
+            msg += `*Cliente:* ${cliente.nombre}%0A`;
+            msg += `*WhatsApp:* ${cliente.whatsapp}%0A`;
+            msg += `--------------------------%0A`;
+
+            carrito.forEach(item => {
+                total += parseFloat(item.precio);
+                msg += `• ${item.nombre} (${item.esCaja ? 'Caja' : 'Unid.'}) - $${item.precio}%0A`;
+            });
+
+            msg += `--------------------------%0A`;
+            msg += `*TOTAL A PAGAR: $${total.toFixed(2)}*%0A%0A`;
+            msg += `_Por favor, confirma mi pedido para preparar la entrega._`;
+
+            // Aquí podrías agregar la lógica para guardar en Supabase antes de redirigir
+            
+            const whatsappUrl = `https://wa.me/5255XXXXXXXXX?text=${msg}`; // Reemplaza con tu número
+            window.open(whatsappUrl, '_blank');
+        }
+
+        renderCarrito();
+    </script>
+</body>
+</html>
