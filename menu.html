@@ -5,63 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menú Principal - Nalgueada Express</title>
     <style>
-        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; }
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --verde: #4BB543; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--azul); color: var(--blanco); padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
         .header-status { width: 100%; text-align: center; margin-bottom: 25px; }
         .header-status h2 { color: var(--amarillo); font-size: 1.8rem; }
 
-        /* Widget de Pedido Pendiente */
+        /* Widget de Pedido Activo (Supabase) */
         #orderTracker { 
             width: 100%; max-width: 400px; background: rgba(255,255,255,0.1); 
             border: 2px solid var(--amarillo); border-radius: 15px; padding: 15px; 
-            margin-bottom: 25px; display: none; /* Oculto por defecto */
+            margin-bottom: 20px; display: none; 
         }
-        .tracker-title { font-size: 0.8rem; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px; }
-        .tracker-id { font-family: monospace; font-weight: bold; color: var(--amarillo); font-size: 1.1rem; }
-        .tracker-status { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
-        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #FDB813; animation: pulse 1.5s infinite; }
+        .tracker-title { font-size: 0.7rem; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px; }
+        .tracker-id { font-family: monospace; font-weight: bold; color: var(--amarillo); font-size: 1rem; }
+        .tracker-status { margin-top: 8px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--amarillo); animation: pulse 1.5s infinite; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         /* Botones del Menú */
-        .btn-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
-        .main-button { width: 100%; padding: 18px; border-radius: 50px; font-weight: bold; text-transform: uppercase; border: none; cursor: pointer; text-decoration: none; text-align: center; font-size: 1.1rem; }
+        .btn-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
+        .main-button { width: 100%; padding: 16px; border-radius: 50px; font-weight: bold; text-transform: uppercase; border: none; cursor: pointer; text-decoration: none; text-align: center; font-size: 1rem; transition: 0.3s; }
         .btn-pide { background: var(--amarillo); color: #000; }
         .btn-sec { background: #FFFFFF; color: var(--azul); }
+        
+        /* Botón de Carrito Pendiente (Local) */
+        #btnIrCarrito { background: var(--verde); color: white; display: none; border: 2px solid white; }
 
-        .btn-logout { margin-top: 40px; background: none; border: none; color: #FF9494; cursor: pointer; font-size: 0.8rem; }
+        .btn-logout { margin-top: 40px; background: none; border: none; color: #FF9494; cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
     </style>
 </head>
 <body>
 
     <div class="header-status">
-        <p>Hola,</p>
-        <h2 id="display-name">...</h2>
+        <p>Bienvenido,</p>
+        <h2 id="display-name">Cargando...</h2>
     </div>
 
     <div id="orderTracker">
-        <p class="tracker-title">Entrega en curso:</p>
-        <div class="tracker-id" id="trackerID">ID: #000000</div>
+        <p class="tracker-title">Estatus de tu entrega:</p>
+        <div class="tracker-id" id="trackerID">ID: #---</div>
         <div class="tracker-status">
             <div class="status-dot"></div>
-            <span id="trackerText">Validando pedido...</span>
+            <span id="trackerText">Consultando...</span>
         </div>
     </div>
 
     <div class="btn-container">
-        <a href="catalogo.html" class="main-button btn-pide">PIDE HOY</a>
-        <a href="#" class="main-button btn-sec">MAS MEJOR</a>
-        <a href="#" class="main-button btn-sec">¿PLANEAS UNA FIESTA?</a>
+        <a href="carritos.html" id="btnIrCarrito" class="main-button">
+            🛒 TERMINAR MI COMPRA
+        </a>
+
+        <a href="catalogo.html" class="main-button btn-pide">VER CATÁLOGO / PEDIR</a>
+        <a href="#" class="main-button btn-sec">PROMOCIONES</a>
+        <a href="#" class="main-button btn-sec">EVENTOS</a>
     </div>
 
-    <button onclick="cerrarSesion()" class="btn-logout">CERRAR SESIÓN</button>
+    <button onclick="cerrarSesion()" class="btn-logout">Cerrar Sesión</button>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim();
+        const S_KEY = 'TU_ANON_KEY_AQUI'.trim();
         const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
         const nombre = localStorage.getItem('cliente_nombre');
@@ -74,33 +81,38 @@
             }
 
             document.getElementById('display-name').innerText = nombre;
-            
-            // Lógica de Rastreo de Pedido
+
+            // 1. Validar Carrito Local (Items sin comprar)
+            const carritoLocal = JSON.parse(localStorage.getItem('carrito')) || [];
+            if (carritoLocal.length > 0) {
+                document.getElementById('btnIrCarrito').style.display = 'block';
+            }
+
+            // 2. Validar Pedido en Curso (Supabase)
             try {
                 const { data: pedidos, error } = await supabaseClient
                     .from('pedidos')
                     .select('id, estatus')
                     .eq('whatsapp_cliente', whatsapp)
-                    .neq('estatus', 'entregado') // No mostrar si ya se entregó
+                    .neq('estatus', 'entregado')
                     .neq('estatus', 'cancelado')
                     .order('fecha_creacion', { ascending: false })
                     .limit(1);
 
                 if (pedidos && pedidos.length > 0) {
-                    const pedidoActivo = pedidos[0];
+                    const p = pedidos[0];
                     document.getElementById('orderTracker').style.display = 'block';
-                    document.getElementById('trackerID').innerText = `ID: #${pedidoActivo.id.slice(0,8)}`;
+                    document.getElementById('trackerID').innerText = `ID: #${p.id.slice(0,8)}`;
                     
-                    // Traducción de estatus para el cliente
-                    const statusMap = {
+                    const statusMsg = {
                         'pendiente': 'Estamos preparando tu pedido...',
                         'en_ruta': '¡La Peugeot Partner va en camino!',
-                        'atendido': 'Pedido listo para despacho'
+                        'atendido': 'Pedido listo en bodega'
                     };
-                    document.getElementById('trackerText').innerText = statusMap[pedidoActivo.estatus] || 'Procesando...';
+                    document.getElementById('trackerText').innerText = statusMsg[p.estatus] || 'Procesando...';
                 }
             } catch (err) {
-                console.error("Error al consultar estatus:", err);
+                console.error("Error de rastreo:", err);
             }
         }
 
