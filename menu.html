@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú - Nalgueada Express</title>
+    <title>Menú Principal - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - v2.2.3 */
+        /* ADN Visual Unificado - v2.2.7 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        body { background-color: #005691; color: #FFFFFF; min-height: 100vh; padding: 20px; }
+        body { background-color: #005691; color: #FFFFFF; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
-        .header-status { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #FDB813; padding-bottom: 15px; }
-        .header-status p { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
-        .header-status h2 { color: #FDB813; font-size: 1.8rem; margin: 5px 0; }
-        .whatsapp-tag { display: inline-block; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.3); }
+        /* Encabezado con datos del cliente */
+        .header-status { width: 100%; text-align: center; margin-bottom: 40px; }
+        .header-status p { font-size: 0.8rem; opacity: 0.8; margin-bottom: 5px; }
+        .header-status h2 { color: #FDB813; font-size: 1.8rem; }
+        .whatsapp-tag { display: inline-block; margin-top: 10px; padding: 5px 15px; background: rgba(255,255,255,0.1); border-radius: 20px; font-size: 0.8rem; }
 
-        .section-title { border-left: 4px solid #FDB813; padding-left: 10px; margin: 25px 0 15px; font-size: 1.2rem; }
-
-        .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
-        .card:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
-        .card-info h3 { font-size: 1.1rem; margin-bottom: 4px; }
-        .card-info p { font-size: 0.8rem; opacity: 0.6; }
-        .price { font-weight: bold; color: #FDB813; font-size: 1.2rem; }
-
-        .empty-cart-msg { text-align: center; margin: 40px 0; opacity: 0.5; font-size: 0.9rem; }
+        /* Contenedor de Botones Originales */
+        .btn-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
         
-        .footer-actions { margin-top: 50px; text-align: center; }
-        .btn-logout { background: none; border: none; color: #FF9494; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; padding: 10px; }
+        .main-button { width: 100%; padding: 18px; border-radius: 50px; font-weight: bold; text-transform: uppercase; border: none; cursor: pointer; text-decoration: none; text-align: center; transition: 0.3s; font-size: 1.1rem; }
+        
+        .btn-pide { background: #FDB813; color: #000; box-shadow: 0 4px 15px rgba(252, 184, 19, 0.3); }
+        .btn-mas { background: #FFFFFF; color: #005691; }
+        .btn-fiesta { background: #FFFFFF; color: #005691; }
+
+        .main-button:hover { transform: scale(1.03); opacity: 0.9; }
+
+        .footer-actions { margin-top: 50px; }
+        .btn-logout { background: none; border: none; color: #FF9494; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -33,49 +35,36 @@
     <div class="header-status">
         <p>Haciendo pedido como</p>
         <h2 id="display-name">Identificando...</h2>
-        <div class="whatsapp-tag" id="display-phone">WhatsApp: ---</div>
+        <div class="whatsapp-tag" id="display-phone">---</div>
     </div>
 
-    <h3 class="section-title">Categorías</h3>
-
-    <div class="card">
-        <div class="card-info">
-            <h3>Nalgueada Sencilla</h3>
-            <p>La clásica de la casa</p>
-        </div>
-        <div class="price">$0.00</div>
-    </div>
-
-    <div class="empty-cart-msg">
-        Selecciona tus artículos para armar el carrito.
+    <div class="btn-container">
+        <a href="catalogo.html" class="main-button btn-pide">PIDE HOY</a>
+        <a href="promociones.html" class="main-button btn-mas">MAS MEJOR</a>
+        <a href="fiesta.html" class="main-button btn-fiesta">¿PLANEAS UNA FIESTA?</a>
     </div>
 
     <div class="footer-actions">
-        <button onclick="cerrarSesion()" class="btn-logout">Cerrar Sesión / Cambiar Usuario</button>
+        <button onclick="cerrarSesion()" class="btn-logout">CERRAR SESIÓN / CAMBIAR USUARIO</button>
     </div>
 
     <script>
-        // Lógica de recuperación de sesión (v2.2.3)
         document.addEventListener('DOMContentLoaded', () => {
             const nombre = localStorage.getItem('cliente_nombre');
             const whatsapp = localStorage.getItem('cliente_whatsapp');
 
             if (nombre && whatsapp) {
-                // Inyectamos los datos en la UI
                 document.getElementById('display-name').innerText = nombre;
                 document.getElementById('display-phone').innerText = `📞 ${whatsapp}`;
-                console.log("Sesión activa:", nombre);
             } else {
-                // Si no hay datos, algo salió mal en el registro, regresamos
-                console.warn("No se detectó sesión activa. Re-encarrilando...");
-                window.location.replace('registro.html');
+                window.location.replace('identificacion.html');
             }
         });
 
         function cerrarSesion() {
-            if(confirm('¿Deseas cerrar sesión? Esto borrará tus datos locales.')) {
+            if(confirm('¿Deseas cambiar de usuario?')) {
                 localStorage.clear();
-                window.location.replace('registro.html');
+                window.location.replace('identificacion.html');
             }
         }
     </script>
