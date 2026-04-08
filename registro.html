@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - v1.8.2 */
+        /* ADN Visual Unificado - Ingeniería de Software v1.8.6 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         
         body {
@@ -48,11 +48,9 @@
             margin-top: 25px;
             border: none;
             cursor: pointer;
-            transition: background 0.3s;
         }
 
         .btn-submit:disabled { background: #666; cursor: wait; }
-
         #status-log { font-size: 0.8rem; margin-top: 15px; font-weight: bold; min-height: 1.2em; }
     </style>
 </head>
@@ -87,11 +85,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        const S_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
-        // ASEGÚRATE DE PEGAR TU LLAVE eyJ... AQUÍ
-        const S_KEY = 'TU_LLAVE_LARGA_AQUI'; 
+        // ENDPOINT ACTUALIZADO v1.8.6
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        // PEGA AQUÍ LA LLAVE ANON DE TU NUEVO PROYECTO
+        const S_KEY = 'TU_NUEVA_ANON_KEY_AQUI'; 
 
-        // Configuración de Cliente v1.8.2: Sin persistencia de sesión para evitar bloqueos
         const supabaseClient = supabase.createClient(S_URL, S_KEY, {
             auth: { persistSession: false }
         });
@@ -106,7 +104,8 @@
                 }
                 navigator.geolocation.getCurrentPosition(
                     (pos) => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
-                    (err) => reject("GPS_DENIED")
+                    (err) => reject("GPS_DENIED"),
+                    { enableHighAccuracy: true, timeout: 5000 }
                 );
             });
         }
@@ -117,15 +116,13 @@
             
             btn.disabled = true;
             btn.innerText = "PROCESANDO...";
-            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Capturando GPS...</span>';
+            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Sincronizando GPS y Servidor...</span>';
 
             try {
-                // 1. GPS Automático
+                // 1. GPS Automático al enviar
                 const coords = await getCoords();
                 const mapsLink = `https://www.google.com/maps?q=${coords}`;
                 
-                statusLog.innerText = "💾 Guardando en el servidor...";
-
                 // 2. Data Payload
                 const row = {
                     nombre: document.getElementById('nombre').value,
@@ -141,21 +138,18 @@
 
                 if (error) throw error;
 
-                // Éxito
-                statusLog.innerHTML = '<span style="color: #4BB543;">✅ Guardado exitosamente. Redirigiendo...</span>';
+                statusLog.innerHTML = '<span style="color: #4BB543;">✅ Información resguardada exitosamente.</span>';
                 setTimeout(() => window.location.href = 'menu.html', 1500);
 
             } catch (err) {
-                console.error("Error técnico detallado:", err);
+                console.error("Error técnico:", err);
                 btn.disabled = false;
                 btn.innerText = "Finalizar Registro";
                 
                 if (err === "GPS_DENIED") {
-                    statusLog.innerHTML = '<span style="color: #FF9494;">⚠️ Activa el GPS para registrarte.</span>';
+                    statusLog.innerHTML = '<span style="color: #FF9494;">⚠️ Error: Se requiere GPS para el registro.</span>';
                 } else {
-                    // Muestra el código de error de Supabase si existe
-                    const errorMsg = err.message || "Fallo de conexión";
-                    statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error: ${errorMsg}</span>`;
+                    statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error de Red: Verifica tu conexión.</span>`;
                 }
             }
         });
