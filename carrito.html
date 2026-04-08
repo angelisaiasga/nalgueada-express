@@ -21,7 +21,8 @@
         .resumen { margin-top: 30px; border-top: 2px solid var(--amarillo); padding-top: 20px; }
         .total-row { display: flex; justify-content: space-between; font-size: 1.4rem; font-weight: bold; margin-bottom: 20px; }
 
-        .btn-confirmar { width: 100%; background: var(--amarillo); color: black; border: none; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .btn-confirmar { width: 100%; background: var(--amarillo); color: black; border: none; padding: 18px; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; }
+        .btn-confirmar:disabled { background: #666; opacity: 0.7; cursor: not-allowed; }
         .empty-msg { text-align: center; margin-top: 50px; opacity: 0.6; }
     </style>
 </head>
@@ -32,8 +33,7 @@
         <h2>Tu Pedido</h2>
     </div>
 
-    <div id="listaCarrito">
-        </div>
+    <div id="listaCarrito"></div>
 
     <div id="areaResumen" style="display: none;">
         <div class="resumen">
@@ -41,23 +41,29 @@
                 <span>Total:</span>
                 <span id="txtTotal">$0.00</span>
             </div>
-            <button class="btn-confirmar" onclick="confirmarPedido()">CONFIRMAR PEDIDO VIA WHATSAPP</button>
+            <button id="btnFinalizar" class="btn-confirmar" onclick="confirmarPedido()">FINALIZAR Y ENVIAR PEDIDO</button>
         </div>
     </div>
 
     <div id="carritoVacio" class="empty-msg" style="display: none;">
         <p>Tu carrito está vacío.</p>
         <br>
-        <a href="catalogo.html" style="color: var(--amarillo)">Ir a comprar algo</a>
+        <a href="catalogo.html" style="color: var(--amarillo)">Ver catálogo</a>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        const S_KEY = 'TU_ANON_KEY_AQUI'.trim(); 
+        const supabaseClient = supabase.createClient(S_URL, S_KEY);
+
         let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-        const listaDiv = document.getElementById('listaCarrito');
-        const resumenDiv = document.getElementById('areaResumen');
-        const vacioDiv = document.getElementById('carritoVacio');
 
         function renderCarrito() {
+            const listaDiv = document.getElementById('listaCarrito');
+            const resumenDiv = document.getElementById('areaResumen');
+            const vacioDiv = document.getElementById('carritoVacio');
+
             if (carrito.length === 0) {
                 listaDiv.innerHTML = '';
                 resumenDiv.style.display = 'none';
@@ -93,28 +99,59 @@
             renderCarrito();
         }
 
-        function confirmarPedido() {
-            // Recuperamos datos del cliente guardados en el registro/identificación
-            const cliente = JSON.parse(localStorage.getItem('userSession')) || { nombre: 'Cliente', whatsapp: '' };
-            let total = 0;
-            let msg = `*Nalgueada Express - Nuevo Pedido*%0A%0A`;
-            msg += `*Cliente:* ${cliente.nombre}%0A`;
-            msg += `*WhatsApp:* ${cliente.whatsapp}%0A`;
-            msg += `--------------------------%0A`;
+        async function confirmarPedido() {
+            const btn = document.getElementById('btnFinalizar');
+            btn.disabled = true;
+            btn.innerText = "REGISTRANDO EN SISTEMA...";
 
-            carrito.forEach(item => {
-                total += parseFloat(item.precio);
-                msg += `• ${item.nombre} (${item.esCaja ? 'Caja' : 'Unid.'}) - $${item.precio}%0A`;
-            });
+            // Recuperar datos de sesión guardados anteriormente
+            const nombre = localStorage.getItem('cliente_nombre');
+            const whatsapp = localStorage.getItem('cliente_whatsapp');
 
-            msg += `--------------------------%0A`;
-            msg += `*TOTAL A PAGAR: $${total.toFixed(2)}*%0A%0A`;
-            msg += `_Por favor, confirma mi pedido para preparar la entrega._`;
+            try {
+                const totalVenta = carrito.reduce((acc, item) => acc + parseFloat(item.precio), 0);
+                
+                // 1. Insertar el Pedido (Header)
+                const { data: pedido, error: errorPedido } = await supabaseClient
+                    .from('pedidos')
+                    .insert([{
+                        whatsapp_cliente: whatsapp,
+                        nombre_cliente: nombre,
+                        total_venta: totalVenta,
+                        estatus: 'pendiente'
+                    }])
+                    .select()
+                    .single();
 
-            // Aquí podrías agregar la lógica para guardar en Supabase antes de redirigir
-            
-            const whatsappUrl = `https://wa.me/5255XXXXXXXXX?text=${msg}`; // Reemplaza con tu número
-            window.open(whatsappUrl, '_blank');
+                if (errorPedido) throw errorPedido;
+
+                // 2. Insertar Detalle de Pedido (Rows)
+                const detalles = carrito.map(item => ({
+                    pedido_id: pedido.id,
+                    producto_id: item.id,
+                    cantidad_pedida: 1,
+                    es_caja: item.esCaja,
+                    precio_unitario_aplicado: item.precio,
+                    subtotal: item.precio
+                }));
+
+                const { error: errorDetalles } = await supabaseClient
+                    .from('detalle_pedidos')
+                    .insert(detalles);
+
+                if (errorDetalles) throw errorDetalles;
+
+                // 3. Éxito total
+                localStorage.removeItem('carrito');
+                alert(`¡Pedido registrado con éxito!\nFolio: ${pedido.id.slice(0,8)}\nEstatus: Pendiente de entrega.`);
+                window.location.replace('menu.html');
+
+            } catch (err) {
+                console.error("Error transaccional:", err);
+                alert("Error al procesar el pedido. Verifica tu conexión.");
+                btn.disabled = false;
+                btn.innerText = "FINALIZAR Y ENVIAR PEDIDO";
+            }
         }
 
         renderCarrito();
