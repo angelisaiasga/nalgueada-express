@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado v1.6 */
+        /* ADN Visual Unificado - Ingeniería de Software */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         
         body {
@@ -15,167 +15,142 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            text-align: center;
             padding: 20px;
         }
 
-        .container { max-width: 400px; width: 100%; }
+        .container { max-width: 400px; width: 100%; text-align: center; }
         .logo { max-width: 150px; margin-bottom: 20px; }
         h2 { margin-bottom: 25px; font-weight: 600; }
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.9; }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85rem; opacity: 0.9; }
         
         input {
             width: 100%;
-            padding: 12px 15px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 8px;
             border: none;
             font-size: 1rem;
-            background-color: #FFFFFF;
+            background: #FFFFFF;
             color: #005691;
         }
 
         .btn-geo {
-            background-color: #A0D8F1;
+            background: #A0D8F1;
             color: #005691;
             padding: 10px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-top: 8px;
             cursor: pointer;
             border: none;
             width: 100%;
             font-weight: bold;
         }
 
-        .btn-enviar {
+        .btn-submit {
             display: block;
             width: 100%;
             padding: 15px;
-            background-color: #FDB813;
+            background: #FDB813;
             color: #000;
             border-radius: 50px;
             font-weight: bold;
             text-transform: uppercase;
-            margin-top: 30px;
+            margin-top: 25px;
             border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .btn-enviar:disabled { background-color: #666; cursor: not-allowed; opacity: 0.7; }
+        .btn-submit:disabled { background: #666; cursor: wait; }
 
-        #status-geo { font-size: 0.75rem; margin-top: 5px; color: #A0D8F1; font-weight: bold; }
+        #geo-status { font-size: 0.75rem; margin-top: 5px; font-weight: bold; }
+        .success-text { color: #4BB543; }
+        .error-text { color: #FF9494; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <img src="logo_nalgueada_solid.png" alt="Logo" class="logo">
-        <h2>Únete a la flota</h2>
+        <img src="logo_nalgueada_solid.png" alt="Nalgueada Express" class="logo">
+        <h2>Registro de Cliente</h2>
         
         <form id="registroForm">
             <div class="form-group">
-                <label>Nombre completo</label>
-                <input type="text" id="nombre" placeholder="Ej. Roberto Diaz" required>
+                <label for="nombre">Nombre Completo</label>
+                <input type="text" id="nombre" required>
             </div>
 
             <div class="form-group">
-                <label>WhatsApp</label>
-                <input type="tel" id="whatsapp" placeholder="55 1234 5678" required>
+                <label for="whatsapp">WhatsApp (10 dígitos)</label>
+                <input type="tel" id="whatsapp" required>
             </div>
 
             <div class="form-group">
-                <label>Dirección (Calle y No.)</label>
-                <input type="text" id="direccion" placeholder="Calle central #12..." required>
-                <button type="button" class="btn-geo" onclick="obtenerUbicacion()">📍 Fijar mi ubicación GPS</button>
-                <p id="status-geo"></p>
+                <label for="direccion">Dirección de Entrega</label>
+                <input type="text" id="direccion" required>
+                <button type="button" class="btn-geo" onclick="getGPS()">📍 Capturar Coordenadas GPS</button>
+                <p id="geo-status"></p>
                 <input type="hidden" id="coords">
             </div>
 
-            <button type="submit" id="btnFinalizar" class="btn-enviar">Finalizar Registro</button>
+            <button type="submit" id="btnMain" class="btn-submit">Finalizar Registro</button>
         </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // CONFIGURACIÓN DE INGENIERÍA v1.6.0
-        const SUPABASE_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
-        // USA LA LLAVE LARGA (Legacy Anon) que empieza con eyJ...
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2dmJvcWhwcHlidWlpd3ZmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMjg2MDgsImV4cCI6MjA1OTcwNDYwOH0.VfR_A1_M8_N1_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y'; 
+        // CLIENT CONFIGURATION
+        const S_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
+        // REEMPLAZA CON TU KEY LARGA (eyJ...)
+        const S_KEY = 'TU_LLAVE_LARGA_AQUI'; 
 
-        // Inicialización optimizada para evitar bloqueos de CORS
-        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false
-            }
-        });
+        const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
-        function obtenerUbicacion() {
-            const status = document.getElementById('status-geo');
+        async function getGPS() {
+            const status = document.getElementById('geo-status');
             if (!navigator.geolocation) {
-                status.innerText = "Geolocalización no soportada";
+                status.innerHTML = '<span class="error-text">GPS no soportado</span>';
                 return;
             }
-            status.innerText = "Localizando...";
+            status.innerText = "Localizando dispositivo...";
             navigator.geolocation.getCurrentPosition((pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
                 // Formato de link directo para la Partner
                 document.getElementById('coords').value = `https://www.google.com/maps?q=${lat},${lon}`;
-                status.innerText = "✅ Ubicación fijada correctamente";
+                status.innerHTML = '<span class="success-text">✅ Ubicación capturada</span>';
             }, (err) => {
-                console.error(err);
-                status.innerText = "❌ Error al obtener GPS. Activa tu ubicación.";
+                status.innerHTML = '<span class="error-text">❌ Error GPS: Activa tu ubicación</span>';
             });
         }
 
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btnFinalizar');
-            const statusGeo = document.getElementById('status-geo').innerText;
-
-            // Validación básica de GPS
+            const btn = document.getElementById('btnMain');
+            
             if (!document.getElementById('coords').value) {
-                alert("Por favor, fija tu ubicación GPS antes de continuar.");
+                alert("Es obligatorio capturar la ubicación GPS.");
                 return;
             }
 
-            btn.innerText = "PROCESANDO...";
             btn.disabled = true;
+            btn.innerText = "SINCRONIZANDO CON SERVIDOR...";
 
-            const payload = { 
-                nombre: document.getElementById('nombre').value, 
-                whatsapp: document.getElementById('whatsapp').value, 
-                direccion: document.getElementById('direccion').value, 
-                referencia: document.getElementById('coords').value 
+            const row = {
+                nombre: document.getElementById('nombre').value,
+                whatsapp: document.getElementById('whatsapp').value,
+                direccion: document.getElementById('direccion').value,
+                referencia: document.getElementById('coords').value
             };
 
-            try {
-                const { data, error } = await _supabase
-                    .from('clientes')
-                    .insert([payload]);
+            const { data, error } = await supabaseClient
+                .from('clientes')
+                .insert([row]);
 
-                if (error) throw error;
-
-                alert("¡Bienvenido a Nalgueada Express!");
-                window.location.href = 'menu.html';
-
-            } catch (err) {
-                console.error("Fallo de red:", err);
-                
-                // PLAN DE RESPALDO (Fallback)
-                alert("El servidor está saturado. Se enviará tu registro vía WhatsApp.");
-                const msj = `*NUEVO REGISTRO*\nNombre: ${payload.nombre}\nWhatsApp: ${payload.whatsapp}\nDirección: ${payload.direccion}\nMapa: ${payload.referencia}`;
-                window.open(`https://wa.me/525588052053?text=${encodeURIComponent(msj)}`, '_blank');
-                
-                btn.innerText = "Finalizar Registro";
+            if (error) {
+                console.error("DB Error:", error);
+                alert(`Error de Persistencia (${error.code}): ${error.message}`);
                 btn.disabled = false;
-            }
-        });
-    </script>
-</body>
-</html>
+                btn.innerText = "Finalizar
