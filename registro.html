@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - v2.1.9 */
+        /* ADN Visual Unificado - v2.2.0 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         body { background-color: #005691; color: #FFFFFF; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .container { max-width: 400px; width: 100%; text-align: center; }
@@ -49,17 +49,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // INFRAESTRUCTURA v2.1.9 - CLEAN SESSION
+        // INFRAESTRUCTURA v2.2.0 - LLAVE ANON PUBLICADA
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
-        const S_KEY = 'TU_ANON_KEY_PUBLIC_AQUÍ'; 
+        // PEGA AQUÍ LA LLAVE eyJ... QUE APARECE EN TU CAPTURA
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdWJhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzg4OTAsImV4cCI6MjA1OTcxNDg5MH0.N0Y8-R5cCI6IkpXVCJ9.eyJpc3MiOiJzdWJhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMzg4OTAsImV4cCI6MjA1OTcxNDg5MH0.N0Y8'; 
 
-        // Inicialización forzando sesión limpia para evitar error 401
         const supabaseClient = supabase.createClient(S_URL, S_KEY, {
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false
-            }
+            auth: { persistSession: false }
         });
 
         function getCoords() {
@@ -80,18 +76,16 @@
             const statusLog = document.getElementById('status-log');
             
             btn.disabled = true;
-            btn.innerText = "REGISTRANDO...";
-            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Sincronizando datos...</span>';
+            btn.innerText = "SINCRONIZANDO...";
+            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Validando acceso a la base...</span>';
 
             try {
                 const coords = await getCoords();
-                const mapsLink = `https://www.google.com/maps?q=${coords}`;
-                
                 const payload = {
                     nombre: document.getElementById('nombre').value,
                     whatsapp: document.getElementById('whatsapp').value,
                     direccion: document.getElementById('direccion').value,
-                    referencia: mapsLink
+                    referencia: `https://www.google.com/maps?q=${coords}`
                 };
 
                 const { error } = await supabaseClient
@@ -104,16 +98,13 @@
                 localStorage.setItem('cliente_whatsapp', payload.whatsapp);
 
                 statusLog.innerHTML = '<span style="color: #4BB543;">✅ ¡Registro exitoso! Entrando...</span>';
-                
-                setTimeout(() => {
-                    window.location.replace('menu.html');
-                }, 1000);
+                setTimeout(() => window.location.replace('menu.html'), 1000);
 
             } catch (err) {
-                console.error("DEBUG:", err);
+                console.error("ERROR TÉCNICO:", err);
                 btn.disabled = false;
                 btn.innerText = "Finalizar Registro";
-                statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error técnico: ${err.message || '401 Unauthorized'}</span>`;
+                statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error ${err.code || '401'}: ${err.message || 'Verifica la llave Anon'}</span>`;
             }
         });
     </script>
