@@ -1,46 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú - Nalgueada Express</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        body { background-color: #005691; color: #FFFFFF; padding: 0; }
-        
-        /* Encabezado de Identidad */
-        .user-header {
-            background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%);
-            padding: 20px;
-            text-align: center;
-            border-bottom: 2px solid #FDB813;
-        }
-        .user-header p { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
-        .user-header h3 { color: #FDB813; font-size: 1.3rem; margin: 5px 0; }
-        .user-header span { font-size: 0.9rem; background: #003d66; padding: 2px 10px; border-radius: 10px; }
 
-        .content { padding: 20px; text-align: center; }
-    </style>
-</head>
-<body>
-
-    <div class="user-header">
-        <p>Cliente Registrado</p>
-        <h3 id="display-name">...</h3>
-        <span id="display-phone">...</span>
-    </div>
-
-    <div class="content">
-        <h2>Bienvenido a la Flota</h2>
-        <p style="margin-top: 20px; opacity: 0.7;">Selecciona tus productos abajo.</p>
-    </div>
-
-    <script>
-        // Lógica de recuperación de sesión
-        const nombre = localStorage.getItem('cliente_nombre');
-        const whatsapp = localStorage.getItem('cliente_whatsapp');
-
-        if (nombre && whatsapp) {
             document.getElementById('display-name').innerText = nombre;
             document.getElementById('display-phone').innerText = `📞 ${whatsapp}`;
         } else {
@@ -50,3 +8,130 @@
     </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú - Nalgueada Express</title>
+    <style>
+        /* ADN Visual Unificado - v1.9.3 */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        
+        body {
+            background-color: #005691;
+            color: #FFFFFF;
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        /* Encabezado Dinámico de Usuario */
+        .user-header {
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 100%);
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 3px solid #FDB813;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .user-header p {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .user-header h3 {
+            color: #FDB813;
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .user-badge {
+            display: inline-block;
+            background: #003d66;
+            padding: 4px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid #A0D8F1;
+        }
+
+        /* Contenedor de Contenido */
+        .menu-container {
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .section-title {
+            margin: 20px 0;
+            font-size: 1.2rem;
+            border-left: 4px solid #FDB813;
+            padding-left: 10px;
+            text-align: left;
+        }
+
+        /* Botón de ejemplo para tus productos */
+        .producto-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(160, 216, 241, 0.2);
+        }
+
+        .btn-logout {
+            display: inline-block;
+            margin-top: 30px;
+            color: #FF9494;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="user-header">
+        <p>Haciendo pedido como</p>
+        <h3 id="display-name">Cargando...</h3>
+        <div class="user-badge" id="display-phone">WhatsApp: ---</div>
+    </header>
+
+    <main class="menu-container">
+        <h2 class="section-title">Categorías</h2>
+        
+        <div class="producto-card">
+            <div style="text-align: left;">
+                <strong style="display: block; font-size: 1.1rem;">Nalgueada Sencilla</strong>
+                <small style="opacity: 0.7;">La clásica de la casa</small>
+            </div>
+            <div style="color: #FDB813; font-weight: bold;">$0.00</div>
+        </div>
+
+        <p style="margin-top: 40px; opacity: 0.6;">Selecciona tus artículos para armar el carrito.</p>
+
+        <a href="#" class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión / Cambiar Usuario</a>
+    </main>
+
+    <script>
+        // Lógica de recuperación de datos (v1.9.3)
+        document.addEventListener('DOMContentLoaded', () => {
+            const nombreLocal = localStorage.getItem('cliente_nombre');
+            const whatsappLocal = localStorage.getItem('cliente_whatsapp');
+
+            // Verificación de integridad de sesión
+            if (nombreLocal && whatsappLocal) {
+                document.getElementById('display-name').innerText = nombreLocal;
+                document.getElementById('display-phone').innerText = `📞 ${whatsappLocal}`;
+            } else {
+                // Redirección de seguridad si no hay datos
+                console.warn
