@@ -1,87 +1,110 @@
-<div id="areaResumen" style="display: none;">
-    <div class="resumen">
-        <div class="total-row">
-            <span>Total:</span>
-            <span id="txtTotal">$0.00</span>
-        </div>
-        <button id="btnFinalizarPedido" class="btn-confirmar" onclick="enviarASistema()">
-            CONFIRMAR Y REGISTRAR PEDIDO
-        </button>
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identificación - Nalgueada Express</title>
+    <style>
+        /* Mantenemos el ADN visual de la v1.1 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-    const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
-    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); 
-    const supabaseClient = supabase.createClient(S_URL, S_KEY);
+        body {
+            background-color: #005691; /* Azul Nalgueada Unificado */
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
 
-    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+        .container {
+            max-width: 400px;
+            width: 100%;
+        }
 
-    // ... (Funciones renderCarrito y eliminar se mantienen igual) ...
+        .logo {
+            max-width: 180px; /* Un poco más pequeño para dar espacio al texto */
+            height: auto;
+            margin-bottom: 20px;
+        }
 
-    async function enviarASistema() {
-        const btn = document.getElementById('btnFinalizarPedido');
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .instrucciones {
+            font-size: 1rem;
+            font-weight: 300;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .menu-opciones {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px 20px;
+            background-color: #FFFFFF;
+            color: #005691;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        /* Estilo para "Ya soy cliente" (Destacado) */
+        .btn-cliente {
+            background-color: #FDB813; /* Amarillo Cheve */
+            color: #000000;
+        }
+
+        /* Botón de regreso discreto */
+        .btn-volver {
+            margin-top: 30px;
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="logo_nalgueada_solid.png" alt="Logo Nalgueada Express" class="logo">
         
-        // Bloqueo total para evitar doble clic
-        btn.disabled = true;
-        btn.innerText = "💾 GUARDANDO EN BASE DE DATOS...";
+        <h2>¡Qué onda!</h2>
+        <p class="instrucciones">Para que tu cheve llegue bien fría, dinos quién eres:</p>
 
-        const nombre = localStorage.getItem('cliente_nombre');
-        const whatsapp = localStorage.getItem('cliente_whatsapp');
-
-        if (!whatsapp) {
-            alert("Sesión expirada. Por favor identifícate de nuevo.");
-            window.location.replace('identificacion.html');
-            return;
-        }
-
-        try {
-            const totalVenta = carrito.reduce((acc, item) => acc + parseFloat(item.precio), 0);
+        <div class="menu-opciones">
+            <a href="#" class="btn btn-cliente">Ya soy cliente</a>
             
-            // 1. Registro del encabezado del pedido
-            const { data: pedido, error: errorPedido } = await supabaseClient
-                .from('pedidos')
-                .insert([{
-                    whatsapp_cliente: whatsapp,
-                    nombre_cliente: nombre,
-                    total_venta: totalVenta,
-                    estatus: 'pendiente'
-                }])
-                .select()
-                .single();
+            <a href="#" class="btn">Regístrame</a>
+        </div>
 
-            if (errorPedido) throw errorPedido;
+        <a href="index.html" class="btn-volver">← Volver al inicio</a>
+    </div>
 
-            // 2. Registro de cada artículo del carrito
-            const detalles = carrito.map(item => ({
-                pedido_id: pedido.id,
-                producto_id: item.id,
-                cantidad_pedida: 1,
-                es_caja: item.esCaja,
-                precio_unitario_aplicado: item.precio,
-                subtotal: item.precio
-            }));
-
-            const { error: errorDetalles } = await supabaseClient
-                .from('detalle_pedidos')
-                .insert(detalles);
-
-            if (errorDetalles) throw errorDetalles;
-
-            // 3. ÉXITO: Limpiar y Redirigir
-            localStorage.removeItem('carrito');
-            
-            alert(`✅ ¡Pedido registrado!\nFolio: ${pedido.id.slice(0,8)}`);
-            window.location.replace('menu.html');
-
-        } catch (err) {
-            console.error("CRITICAL ERROR:", err);
-            alert("Error de conexión con el servidor. Reintenta.");
-            btn.disabled = false;
-            btn.innerText = "REINTENTAR REGISTRO";
-        }
-    }
-    
-    renderCarrito();
-</script>
+</body>
+</html>
