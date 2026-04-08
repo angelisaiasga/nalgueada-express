@@ -3,108 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identificación - Nalgueada Express</title>
+    <title>Mi Carrito - Nalgueada Express</title>
     <style>
-        /* Mantenemos el ADN visual de la v1.1 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --rojo: #ff4d4d; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--azul); color: var(--blanco); padding: 20px; }
+        
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+        .btn-back { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 0.8rem; }
 
-        body {
-            background-color: #005691; /* Azul Nalgueada Unificado */
-            color: #FFFFFF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-            padding: 20px;
-        }
+        .item-carrito { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .item-nombre { font-weight: bold; }
+        .item-meta { font-size: 0.75rem; color: var(--amarillo); margin-top: 4px; }
+        .btn-remove { background: none; border: none; color: var(--rojo); font-weight: bold; cursor: pointer; font-size: 1.2rem; }
 
-        .container {
-            max-width: 400px;
-            width: 100%;
-        }
+        .resumen { margin-top: 30px; border-top: 2px solid var(--amarillo); padding-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: bold; margin-bottom: 25px; }
 
-        .logo {
-            max-width: 180px; /* Un poco más pequeño para dar espacio al texto */
-            height: auto;
-            margin-bottom: 20px;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .instrucciones {
-            font-size: 1rem;
-            font-weight: 300;
-            margin-bottom: 40px;
-            opacity: 0.9;
-        }
-
-        .menu-opciones {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 15px 20px;
-            background-color: #FFFFFF;
-            color: #005691;
-            text-decoration: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: transform 0.2s ease, background-color 0.2s ease;
-            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn:active { transform: scale(0.98); }
-
-        /* Estilo para "Ya soy cliente" (Destacado) */
-        .btn-cliente {
-            background-color: #FDB813; /* Amarillo Cheve */
-            color: #000000;
-        }
-
-        /* Botón de regreso discreto */
-        .btn-volver {
-            margin-top: 30px;
-            display: inline-block;
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 0.8rem;
-        }
+        .btn-confirmar-final { width: 100%; background: var(--amarillo); color: black; border: none; padding: 18px; border-radius: 50px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .btn-confirmar-final:disabled { background: #666; cursor: not-allowed; }
+        
+        .empty-cart { text-align: center; margin-top: 60px; opacity: 0.6; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <img src="logo_nalgueada_solid.png" alt="Logo Nalgueada Express" class="logo">
-        
-        <h2>¡Qué onda!</h2>
-        <p class="instrucciones">Para que tu cheve llegue bien fría, dinos quién eres:</p>
-
-        <div class="menu-opciones">
-            <a href="#" class="btn btn-cliente">Ya soy cliente</a>
-            
-            <a href="#" class="btn">Regístrame</a>
-        </div>
-
-        <a href="index.html" class="btn-volver">← Volver al inicio</a>
+    <div class="header">
+        <a href="catalogo.html" class="btn-back"> < VOLVER</a>
+        <h2 id="version-check">Resumen: SISTEMA LOCAL</h2>
     </div>
 
+    <div id="listaCarrito"></div>
+
+    <div id="areaResumen" style="display: none;">
+        <div class="resumen">
+            <div class="total-row">
+                <span>Total:</span>
+                <span id="txtTotal">$0.00</span>
+            </div>
+            <button id="btnEjecutarRegistro" class="btn-confirmar-final" onclick="registrarPedidoEnBaseDeDatos()">
+                CONFIRMAR Y FINALIZAR PEDIDO
+            </button>
+        </div>
+    </div>
+
+    <div id="carritoVacio" class="empty-cart" style="display: none;">
+        <p>Tu carrito está vacío.</p>
+        <br>
+        <a href="catalogo.html" style="color: var(--amarillo); font-weight: bold; text-decoration: none;">VOLVER AL CATÁLOGO</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // Reemplaza con tu llave eyJ...
+        const supabaseClient = supabase.createClient(S_URL, S_KEY);
+
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+
+        function renderCarrito() {
+            const container = document.getElementById('listaCarrito');
+            const resumen = document.getElementById('areaResumen');
+            const vacio = document.getElementById('carritoVacio');
+
+            if (carrito.length === 0) {
+                container.innerHTML = '';
+                resumen.style.display = 'none';
+                vacio.style.display = 'block';
+                return;
+            }
+
+            vacio.style.display = 'none';
+            resumen.style.display = 'block';
+            container.innerHTML = '';
+
+            let total = 0;
+            carrito.forEach((item, index) => {
+                total += parseFloat(item.precio);
+                const div = document.createElement('div');
+                div.className = 'item-carrito';
+                div.innerHTML = `
+                    <div>
+                        <div class="item-nombre">${item.nombre}</div>
+                        <div class="item-meta">${item.esCaja ? '📦 CAJA' : '🍺 UNITARIO'} - $${item.precio}</div>
+                    </div>
+                    <button class="btn-remove" onclick="eliminar(${index})">✕</button>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('txtTotal').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function eliminar(index) {
+            carrito.splice(index, 1);
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            renderCarrito();
+        }
+
+        async function registrarPedidoEnBaseDeDatos() {
+            const btn = document.getElementById('btnEjecutarRegistro');
+            btn.disabled = true;
+            btn.innerText = "💾 REGISTRANDO...";
+
+            const nombre = localStorage.getItem('cliente_nombre');
+            const whatsapp = localStorage.getItem('cliente_whatsapp');
+
+            try {
+                const totalVenta = carrito.reduce((acc, item) => acc + parseFloat(item.precio), 0);
+                
+                // 1. Insertar Pedido
+                const { data: pedido, error: errorPedido } = await supabaseClient
+                    .from('pedidos')
+                    .insert([{
+                        whatsapp_cliente: whatsapp,
+                        nombre_cliente: nombre,
+                        total_venta: totalVenta,
+                        estatus: 'pendiente'
+                    }])
+                    .select()
+                    .single();
+
+                if (errorPedido) throw errorPedido;
+
+                // 2. Insertar Detalles
+                const detalles = carrito.map(item => ({
+                    pedido_id: pedido.id,
+                    producto_id: item.id,
+                    cantidad_pedida: 1,
+                    es_caja: item.esCaja,
+                    precio_unitario_aplicado: item.precio,
+                    subtotal: item.precio
+                }));
+
+                const { error: errorDetalles } = await supabaseClient
+                    .from('detalle_pedidos')
+                    .insert(detalles);
+
+                if (errorDetalles) throw errorDetalles;
+
+                // 3. Éxito
+                localStorage.removeItem('carrito');
+                alert(`¡Pedido # ${pedido.id.slice(0,8)} registrado!`);
+                window.location.replace('menu.html');
+
+            } catch (err) {
+                console.error("Error técnico:", err);
+                alert("Fallo en la conexión con la base de datos.");
+                btn.disabled = false;
+                btn.innerText = "REINTENTAR REGISTRO";
+            }
+        }
+
+        renderCarrito();
+    </script>
 </body>
 </html>
