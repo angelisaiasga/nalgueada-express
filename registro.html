@@ -104,9 +104,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // Configuración extraída de tu captura
-       const SUPABASE_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
-       const SUPABASE_ANON_KEY = 'sb_publishable_vY2mFGcPgE8FZ77z8XfQNQ_MyB3b68f12cc1214040f9000f68f17665796a583e';
+        // CONFIGURACIÓN ACTUALIZADA v1.4.7
+        const SUPABASE_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
+        // Pega aquí la llave LARGA que empieza con eyJ... de tu tercera captura
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; 
+
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 console.log("Conectando a Supabase..."); // Esto te servirá para ver en F12 si cargó
