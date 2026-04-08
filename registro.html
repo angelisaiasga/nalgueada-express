@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - Ingeniería de Software v1.8.6 */
+        /* ADN Visual Unificado - v1.8.8 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         
         body {
@@ -85,10 +85,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // ENDPOINT ACTUALIZADO v1.8.6
+        // CONFIGURACIÓN DE INFRAESTRUCTURA v1.8.8
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
-        // PEGA AQUÍ LA LLAVE ANON DE TU NUEVO PROYECTO
-        const S_KEY = 'TU_NUEVA_ANON_KEY_AQUI'; 
+        // Llave Publishable validada por captura de pantalla
+        const S_KEY = 'sb_publishable_vY2mFGcPgE8FZ77z8XfQNQ_MyB3b68f12cc1214040f9000f68f17665796a583e'; 
 
         const supabaseClient = supabase.createClient(S_URL, S_KEY, {
             auth: { persistSession: false }
@@ -105,7 +105,7 @@
                 navigator.geolocation.getCurrentPosition(
                     (pos) => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
                     (err) => reject("GPS_DENIED"),
-                    { enableHighAccuracy: true, timeout: 5000 }
+                    { enableHighAccuracy: true, timeout: 7000 }
                 );
             });
         }
@@ -119,11 +119,13 @@
             statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Sincronizando GPS y Servidor...</span>';
 
             try {
-                // 1. GPS Automático al enviar
+                // 1. Captura de GPS asíncrona
                 const coords = await getCoords();
                 const mapsLink = `https://www.google.com/maps?q=${coords}`;
                 
-                // 2. Data Payload
+                statusLog.innerText = "💾 Resguardando información...";
+
+                // 2. Preparar el objeto de inserción
                 const row = {
                     nombre: document.getElementById('nombre').value,
                     whatsapp: document.getElementById('whatsapp').value,
@@ -131,28 +133,11 @@
                     referencia: mapsLink
                 };
 
-                // 3. Inserción Directa
+                // 3. Inserción directa en la tabla 'clientes'
                 const { error } = await supabaseClient
                     .from('clientes')
                     .insert([row]);
 
                 if (error) throw error;
 
-                statusLog.innerHTML = '<span style="color: #4BB543;">✅ Información resguardada exitosamente.</span>';
-                setTimeout(() => window.location.href = 'menu.html', 1500);
-
-            } catch (err) {
-                console.error("Error técnico:", err);
-                btn.disabled = false;
-                btn.innerText = "Finalizar Registro";
-                
-                if (err === "GPS_DENIED") {
-                    statusLog.innerHTML = '<span style="color: #FF9494;">⚠️ Error: Se requiere GPS para el registro.</span>';
-                } else {
-                    statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error de Red: Verifica tu conexión.</span>`;
-                }
-            }
-        });
-    </script>
-</body>
-</html>
+                // Éx
