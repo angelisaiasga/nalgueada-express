@@ -5,107 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado - v1.8.8 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
-        
-        body {
-            background-color: #005691;
-            color: #FFFFFF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
+        body { background-color: #005691; color: #FFFFFF; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .container { max-width: 400px; width: 100%; text-align: center; }
         .logo { max-width: 150px; margin-bottom: 20px; }
         h2 { margin-bottom: 10px; font-weight: 600; }
         p.subtitle { margin-bottom: 25px; font-size: 0.9rem; opacity: 0.8; }
-        
         .form-group { margin-bottom: 15px; text-align: left; }
         label { display: block; margin-bottom: 5px; font-size: 0.85rem; opacity: 0.9; }
-        
-        input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            font-size: 1rem;
-            background: #FFFFFF;
-            color: #005691;
-        }
-
-        .btn-submit {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background: #FDB813;
-            color: #000;
-            border-radius: 50px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-top: 25px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn-submit:disabled { background: #666; cursor: wait; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 1rem; background: #FFFFFF; color: #005691; }
+        .btn-submit { display: block; width: 100%; padding: 15px; background: #FDB813; color: #000; border-radius: 50px; font-weight: bold; text-transform: uppercase; margin-top: 25px; border: none; cursor: pointer; }
+        .btn-submit:disabled { background: #666; cursor: wait; opacity: 0.8; }
         #status-log { font-size: 0.8rem; margin-top: 15px; font-weight: bold; min-height: 1.2em; }
     </style>
 </head>
 <body>
-
     <div class="container">
         <img src="logo_nalgueada_solid.png" alt="Nalgueada Express" class="logo">
         <h2>Registro de Cliente</h2>
-        <p class="subtitle">Sincronización directa con base de datos segura.</p>
-        
+        <p class="subtitle">Sincronización segura con base de datos.</p>
         <form id="registroForm">
-            <div class="form-group">
-                <label for="nombre">Nombre Completo</label>
-                <input type="text" id="nombre" placeholder="Ej. Roberto Diaz" required>
-            </div>
-
-            <div class="form-group">
-                <label for="whatsapp">WhatsApp (10 dígitos)</label>
-                <input type="tel" id="whatsapp" placeholder="5512345678" required>
-            </div>
-
-            <div class="form-group">
-                <label for="direccion">Dirección de Entrega</label>
-                <input type="text" id="direccion" placeholder="Calle, número y colonia" required>
-            </div>
-
+            <div class="form-group"><label>Nombre Completo</label><input type="text" id="nombre" placeholder="Ej. Roberto Diaz" required></div>
+            <div class="form-group"><label>WhatsApp</label><input type="tel" id="whatsapp" placeholder="5512345678" required></div>
+            <div class="form-group"><label>Dirección</label><input type="text" id="direccion" placeholder="Calle, número y colonia" required></div>
             <button type="submit" id="btnMain" class="btn-submit">Finalizar Registro</button>
             <p id="status-log"></p>
         </form>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <script>
-        // CONFIGURACIÓN DE INFRAESTRUCTURA v1.8.8
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
-        // Llave Publishable validada por captura de pantalla
         const S_KEY = 'sb_publishable_vY2mFGcPgE8FZ77z8XfQNQ_MyB3b68f12cc1214040f9000f68f17665796a583e'; 
-
-        const supabaseClient = supabase.createClient(S_URL, S_KEY, {
-            auth: { persistSession: false }
-        });
-
-        const statusLog = document.getElementById('status-log');
+        const supabaseClient = supabase.createClient(S_URL, S_KEY, { auth: { persistSession: false } });
 
         function getCoords() {
             return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject("GPS_NOT_SUPPORTED");
-                    return;
-                }
                 navigator.geolocation.getCurrentPosition(
                     (pos) => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
                     (err) => reject("GPS_DENIED"),
-                    { enableHighAccuracy: true, timeout: 7000 }
+                    { enableHighAccuracy: true, timeout: 8000 }
                 );
             });
         }
@@ -113,31 +52,34 @@
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnMain');
-            
+            const statusLog = document.getElementById('status-log');
             btn.disabled = true;
-            btn.innerText = "PROCESANDO...";
-            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Sincronizando GPS y Servidor...</span>';
+            statusLog.innerHTML = '<span style="color: #A0D8F1;">📡 Sincronizando datos y GPS...</span>';
 
             try {
-                // 1. Captura de GPS asíncrona
                 const coords = await getCoords();
-                const mapsLink = `https://www.google.com/maps?q=${coords}`;
-                
-                statusLog.innerText = "💾 Resguardando información...";
-
-                // 2. Preparar el objeto de inserción
                 const row = {
                     nombre: document.getElementById('nombre').value,
                     whatsapp: document.getElementById('whatsapp').value,
                     direccion: document.getElementById('direccion').value,
-                    referencia: mapsLink
+                    referencia: `https://www.google.com/maps?q=${coords}`
                 };
 
-                // 3. Inserción directa en la tabla 'clientes'
-                const { error } = await supabaseClient
-                    .from('clientes')
-                    .insert([row]);
-
+                const { error } = await supabaseClient.from('clientes').insert([row]);
                 if (error) throw error;
 
-                // Éx
+                // PERSISTENCIA LOCAL DE SESIÓN
+                localStorage.setItem('cliente_nombre', row.nombre);
+                localStorage.setItem('cliente_whatsapp', row.whatsapp);
+
+                statusLog.innerHTML = '<span style="color: #4BB543;">✅ ¡Registro exitoso!</span>';
+                setTimeout(() => window.location.replace('menu.html'), 1000);
+
+            } catch (err) {
+                btn.disabled = false;
+                statusLog.innerHTML = `<span style="color: #FF9494;">❌ Error: ${err.message || "Revisa tu GPS o conexión"}</span>`;
+            }
+        });
+    </script>
+</body>
+</html>
