@@ -105,11 +105,11 @@
 
     <script>
         // Configuración extraída de tu captura
-        const SUPABASE_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_vY2mFGcPgE8FZ77z8XfQNQ_MyB3b68f12cc1214040f9000f68f17665796a583e';
-
+       const SUPABASE_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
+       const SUPABASE_ANON_KEY = 'sb_publishable_vY2mFGcPgE8FZ77z8XfQNQ_MyB3b68f12cc1214040f9000f68f17665796a583e';
+        
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+console.log("Conectando a Supabase..."); // Esto te servirá para ver en F12 si cargó
         function obtenerUbicacion() {
             const status = document.getElementById('status-geo');
             if (!navigator.geolocation) {
