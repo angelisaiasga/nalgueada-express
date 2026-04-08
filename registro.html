@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Nalgueada Express</title>
     <style>
-        /* ADN Visual Unificado v1.4 */
+        /* ADN Visual Unificado v1.6 */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         
         body {
@@ -20,15 +20,11 @@
         }
 
         .container { max-width: 400px; width: 100%; }
-
         .logo { max-width: 150px; margin-bottom: 20px; }
-
         h2 { margin-bottom: 25px; font-weight: 600; }
-
         .form-group { margin-bottom: 20px; text-align: left; }
-
         label { display: block; margin-bottom: 8px; font-size: 0.9rem; opacity: 0.9; }
-
+        
         input {
             width: 100%;
             padding: 12px 15px;
@@ -64,12 +60,12 @@
             margin-top: 30px;
             border: none;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: all 0.3s ease;
         }
 
-        .btn-enviar:disabled { background-color: #ccc; cursor: not-allowed; }
+        .btn-enviar:disabled { background-color: #666; cursor: not-allowed; opacity: 0.7; }
 
-        #status-geo { font-size: 0.75rem; margin-top: 5px; color: #A0D8F1; }
+        #status-geo { font-size: 0.75rem; margin-top: 5px; color: #A0D8F1; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -81,7 +77,7 @@
         <form id="registroForm">
             <div class="form-group">
                 <label>Nombre completo</label>
-                <input type="text" id="nombre" placeholder="Ej. Angel Alvarez" required>
+                <input type="text" id="nombre" placeholder="Ej. Roberto Diaz" required>
             </div>
 
             <div class="form-group">
@@ -104,15 +100,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // CONFIGURACIÓN ACTUALIZADA v1.4.7
+        // CONFIGURACIÓN DE INGENIERÍA v1.6.0
         const SUPABASE_URL = 'https://jvvboqhppybuiiwvfvlr.supabase.co';
-        // Pega aquí la llave LARGA que empieza con eyJ... de tu tercera captura
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; 
+        // USA LA LLAVE LARGA (Legacy Anon) que empieza con eyJ...
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2dmJvcWhwcHlidWlpd3ZmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQxMjg2MDgsImV4cCI6MjA1OTcwNDYwOH0.VfR_A1_M8_N1_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y_Z_Y'; 
 
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-console.log("Conectando a Supabase..."); // Esto te servirá para ver en F12 si cargó
+        // Inicialización optimizada para evitar bloqueos de CORS
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                detectSessionInUrl: false
+            }
+        });
+
         function obtenerUbicacion() {
             const status = document.getElementById('status-geo');
             if (!navigator.geolocation) {
@@ -123,37 +124,56 @@ console.log("Conectando a Supabase..."); // Esto te servirá para ver en F12 si 
             navigator.geolocation.getCurrentPosition((pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
+                // Formato de link directo para la Partner
                 document.getElementById('coords').value = `https://www.google.com/maps?q=${lat},${lon}`;
                 status.innerText = "✅ Ubicación fijada correctamente";
-            }, () => {
-                status.innerText = "❌ No se pudo obtener la ubicación";
+            }, (err) => {
+                console.error(err);
+                status.innerText = "❌ Error al obtener GPS. Activa tu ubicación.";
             });
         }
 
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnFinalizar');
-            btn.innerText = "REGISTRANDO...";
+            const statusGeo = document.getElementById('status-geo').innerText;
+
+            // Validación básica de GPS
+            if (!document.getElementById('coords').value) {
+                alert("Por favor, fija tu ubicación GPS antes de continuar.");
+                return;
+            }
+
+            btn.innerText = "PROCESANDO...";
             btn.disabled = true;
 
-            const { data, error } = await _supabase
-                .from('clientes')
-                .insert([
-                    { 
-                        nombre: document.getElementById('nombre').value, 
-                        whatsapp: document.getElementById('whatsapp').value, 
-                        direccion: document.getElementById('direccion').value, 
-                        referencia: document.getElementById('coords').value 
-                    }
-                ]);
+            const payload = { 
+                nombre: document.getElementById('nombre').value, 
+                whatsapp: document.getElementById('whatsapp').value, 
+                direccion: document.getElementById('direccion').value, 
+                referencia: document.getElementById('coords').value 
+            };
 
-            if (error) {
-                alert("Error: " + error.message);
-                btn.innerText = "Finalizar Registro";
-                btn.disabled = false;
-            } else {
+            try {
+                const { data, error } = await _supabase
+                    .from('clientes')
+                    .insert([payload]);
+
+                if (error) throw error;
+
                 alert("¡Bienvenido a Nalgueada Express!");
                 window.location.href = 'menu.html';
+
+            } catch (err) {
+                console.error("Fallo de red:", err);
+                
+                // PLAN DE RESPALDO (Fallback)
+                alert("El servidor está saturado. Se enviará tu registro vía WhatsApp.");
+                const msj = `*NUEVO REGISTRO*\nNombre: ${payload.nombre}\nWhatsApp: ${payload.whatsapp}\nDirección: ${payload.direccion}\nMapa: ${payload.referencia}`;
+                window.open(`https://wa.me/525588052053?text=${encodeURIComponent(msj)}`, '_blank');
+                
+                btn.innerText = "Finalizar Registro";
+                btn.disabled = false;
             }
         });
     </script>
