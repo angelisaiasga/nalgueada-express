@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Entregas - Nalgueada Express</title>
+    <style>
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --gris: #f4f4f4; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--gris); color: #333; padding: 20px; }
+        
+        h2 { color: var(--azul); margin-bottom: 20px; text-align: center; }
+        
+        .pedido-card { 
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 8px solid #ccc;
+        }
+        
+        /* Colores dinámicos por estatus */
+        .status-pendiente { border-left-color: #ff4d4d; } /* Rojo */
+        .status-atendido { border-left-color: #FFA500; }  /* Naranja */
+        .status-en_ruta { border-left-color: #4BB543; }    /* Verde */
+
+        .info-cliente { margin-bottom: 15px; }
+        .info-cliente b { font-size: 1.1rem; color: var(--azul); }
+        .info-cliente p { font-size: 0.9rem; color: #666; margin-top: 5px; }
+
+        .badge { 
+            display: inline-block; padding: 4px 10px; border-radius: 5px; 
+            font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;
+        }
+        .badge-pendiente { background: #ffebeb; color: #ff4d4d; }
+        .badge-atendido { background: #fff5e6; color: #FFA500; }
+        .badge-en_ruta { background: #ebfaeb; color: #4BB543; }
+
+        .btn-accion { 
+            width: 100%; padding: 12px; border: none; border-radius: 8px; 
+            font-weight: bold; cursor: pointer; text-transform: uppercase;
+            transition: 0.3s; color: white;
+        }
+        .btn-atender { background-color: #FFA500; }
+        .btn-rutear { background-color: #4BB543; }
+        .btn-entregar { background-color: var(--azul); }
+
+        .loader { text-align: center; padding: 50px; color: var(--azul); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>📦 Control de Entregas</h2>
+    <div id="listaPedidos">
+        <div class="loader">Cargando pedidos activos...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co'.trim();
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // Reemplaza con tu llave
+        const supabaseClient = supabase.createClient(S_URL, S_KEY);
+
+        async function cargarPedidos() {
+            const container = document.getElementById('listaPedidos');
+            
+            try {
+                // Consultamos pedidos que NO estén entregados ni cancelados
+                const { data: pedidos, error } = await supabaseClient
+                    .from('pedidos')
+                    .select('*')
+                    .not('estatus', 'in', '("entregado","cancelado")')
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                if (pedidos.length === 0) {
+                    container.innerHTML = '<div class="loader">✅ No hay pedidos pendientes. ¡Buen trabajo!</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                pedidos.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = `pedido-card status-${p.estatus}`;
+                    
+                    // Definimos el botón según el estado actual
+                    let botonHTML = '';
+                    if (p.estatus === 'pendiente') {
+                        botonHTML = `<button class="btn-accion btn-atender" onclick="cambiarEstatus('${p.id}', 'atendido')">MARCAR COMO ATENDIDO</button>`;
+                    } else if (p.estatus === 'atendido') {
+                        botonHTML = `<button class="btn-accion btn-rutear" onclick="cambiarEstatus('${p.id}', 'en_ruta')">ENVIAR EN RUTA 🚀</button>`;
+                    } else if (p.estatus === 'en_ruta') {
+                        botonHTML = `<button class="btn-accion btn-entregar" onclick="cambiarEstatus('${p.id}', 'entregado')">CONFIRMAR ENTREGA ✅</button>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="badge badge-${p.estatus}">${p.estatus.replace('_', ' ')}</div>
+                        <div class="info-cliente">
+                            <b>${p.nombre_cliente}</b>
+                            <p>📱 WhatsApp: ${p.whatsapp_cliente}</p>
+                            <p>💰 Total: $${p.total_venta}</p>
+                            <p>🕒 Fecha: ${new Date(p.created_at).toLocaleString()}</p>
+                        </div>
+                        ${botonHTML}
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div class="loader">❌ Error al conectar con Supabase.</div>';
+            }
+        }
+
+        async function cambiarEstatus(id, nuevoEstatus) {
+            const confirmacion = confirm(`¿Cambiar pedido a "${nuevoEstatus.toUpperCase()}"?`);
+            if (!confirmacion) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('pedidos')
+                    .update({ estatus: nuevoEstatus })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                // Recargamos la lista para ver los cambios
+                cargarPedidos();
+            } catch (err) {
+                alert("Error al actualizar el pedido");
+                console.error(err);
+            }
+        }
+
+        // Carga inicial
+        cargarPedidos();
+        
+        // Auto-refresco cada 30 segundos para nuevos pedidos
+        setInterval(cargarPedidos, 30000);
+    </script>
+</body>
+</html>
