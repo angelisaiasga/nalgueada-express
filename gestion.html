@@ -3,90 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Entregas - Nalgueada Express</title>
+    <title>Gestión Logística - Nalgueada Express</title>
     <style>
         :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --gris: #f4f4f4; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--gris); color: #333; padding: 20px; min-height: 100vh; }
+        body { background-color: var(--gris); color: #333; padding: 20px; }
+        header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid var(--azul); padding-bottom: 10px; }
         
-        header { text-align: center; margin-bottom: 30px; }
-        h2 { color: var(--azul); font-size: 1.8rem; }
-        .subtitle { font-size: 0.9rem; color: #666; margin-top: 5px; }
-        
-        #listaPedidos { width: 100%; max-width: 600px; margin: 0 auto; }
-
+        /* Estilo de Tarjetas */
         .pedido-card { 
-            background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 10px solid #ccc;
-            transition: transform 0.2s;
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 8px solid #ccc;
         }
-        
-        /* Colores por Estatus */
         .status-pendiente { border-left-color: #ff4d4d; }
         .status-atendido { border-left-color: #FFA500; }
         .status-en_ruta { border-left-color: #4BB543; }
 
-        .badge { 
-            display: inline-block; padding: 5px 12px; border-radius: 50px; 
-            font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-bottom: 15px;
-        }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
         .badge-pendiente { background: #ffebeb; color: #ff4d4d; }
         .badge-atendido { background: #fff5e6; color: #FFA500; }
         .badge-en_ruta { background: #ebfaeb; color: #4BB543; }
 
-        .info-cliente b { font-size: 1.2rem; display: block; margin-bottom: 5px; }
-        .info-cliente p { font-size: 0.95rem; color: #555; line-height: 1.6; }
-
         .btn-accion { 
-            width: 100%; margin-top: 20px; padding: 15px; border: none; border-radius: 10px; 
-            font-weight: bold; cursor: pointer; text-transform: uppercase;
-            font-size: 0.9rem; transition: 0.3s; color: white;
+            width: 100%; margin-top: 15px; padding: 12px; border: none; border-radius: 8px; 
+            font-weight: bold; cursor: pointer; text-transform: uppercase; color: white;
         }
-        .btn-atender { background-color: #FFA500; box-shadow: 0 4px 12px rgba(255,165,0,0.3); }
-        .btn-rutear { background-color: #4BB543; box-shadow: 0 4px 12px rgba(75,181,67,0.3); }
-        .btn-entregar { background-color: var(--azul); box-shadow: 0 4px 12px rgba(0,86,145,0.3); }
+        .btn-atender { background-color: #FFA500; }
+        .btn-rutear { background-color: #4BB543; }
+        .btn-entregar { background-color: var(--azul); }
 
-        .loader { text-align: center; padding: 50px; color: var(--azul); font-style: italic; }
+        /* Estilos de Error en Pantalla */
+        .error-box { background: #fff1f0; border: 1px solid #ffa39e; padding: 20px; border-radius: 10px; color: #cf1322; text-align: center; }
+        .loader { text-align: center; padding: 40px; color: var(--azul); font-weight: bold; }
     </style>
 </head>
 <body>
 
     <header>
-        <h2>📦 Control de Entregas</h2>
-        <p class="subtitle">Panel de Despacho Logístico</p>
+        <h2>📦 Gestión de Pedidos</h2>
+        <p>Control de estados - Peugeot Partner</p>
     </header>
 
     <div id="listaPedidos">
-        <div class="loader">Sincronizando con Supabase...</div>
+        <div class="loader">Intentando conectar con Supabase...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // CONFIGURACIÓN (Asegúrate de que sean las mismas que en menú/catálogo)
+        // CONFIGURACIÓN CENTRALIZADA
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co'.trim();
-        const S_KEY = 'TU_ANON_KEY_AQUI'.trim(); 
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // <--- PEGA TU KEY AQUÍ
         const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
         async function cargarPedidos() {
             const container = document.getElementById('listaPedidos');
             
             try {
-                // Filtro optimizado para evitar Error 400
-                const { data: pedidos, error } = await supabaseClient
+                // CONSULTA SIMPLE: Sin filtros complejos ni ordenamientos para evitar errores 400/42703
+                const { data: pedidos, error, status } = await supabaseClient
                     .from('pedidos')
-                    .select('*')
-                    .or('estatus.eq.pendiente,estatus.eq.atendido,estatus.eq.en_ruta')
-                    .order('created_at', { ascending: true });
+                    .select('*');
 
-                if (error) throw error;
+                if (error) {
+                    container.innerHTML = `
+                        <div class="error-box">
+                            <h3>❌ Error de Conexión</h3>
+                            <p>${error.message}</p>
+                            <p><small>Código HTTP: ${status}</small></p>
+                        </div>`;
+                    return;
+                }
 
-                if (!pedidos || pedidos.length === 0) {
-                    container.innerHTML = '<div class="loader" style="color: #4BB543;">✅ No hay entregas pendientes.</div>';
+                // Filtrado y Ordenamiento en el Cliente (JavaScript)
+                const activos = pedidos
+                    .filter(p => ['pendiente', 'atendido', 'en_ruta'].includes(p.estatus))
+                    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+                if (activos.length === 0) {
+                    container.innerHTML = '<div class="loader">✅ No hay pedidos activos por entregar.</div>';
                     return;
                 }
 
                 container.innerHTML = '';
-                pedidos.forEach(p => {
+                activos.forEach(p => {
                     const card = document.createElement('div');
                     card.className = `pedido-card status-${p.estatus}`;
                     
@@ -94,18 +93,17 @@
                     if (p.estatus === 'pendiente') {
                         botonHTML = `<button class="btn-accion btn-atender" onclick="cambiarEstatus('${p.id}', 'atendido')">Marcar como Atendido</button>`;
                     } else if (p.estatus === 'atendido') {
-                        botonHTML = `<button class="btn-accion btn-rutear" onclick="cambiarEstatus('${p.id}', 'en_ruta')">Enviar en Ruta (Partner 🚚)</button>`;
+                        botonHTML = `<button class="btn-accion btn-rutear" onclick="cambiarEstatus('${p.id}', 'en_ruta')">Enviar a Ruta 🚚</button>`;
                     } else if (p.estatus === 'en_ruta') {
-                        botonHTML = `<button class="btn-accion btn-entregar" onclick="cambiarEstatus('${p.id}', 'entregado')">Confirmar Entrega ✅</button>`;
+                        botonHTML = `<button class="btn-accion btn-entregar" onclick="cambiarEstatus('${p.id}', 'entregado')">Finalizar Entrega ✅</button>`;
                     }
 
                     card.innerHTML = `
-                        <div class="badge badge-${p.estatus}">${p.estatus.replace('_', ' ')}</div>
+                        <div class="badge badge-${p.estatus}">${p.estatus}</div>
                         <div class="info-cliente">
                             <b>${p.nombre_cliente}</b>
                             <p>📱 WhatsApp: ${p.whatsapp_cliente}</p>
-                            <p>💰 Total Pedido: $${p.total_venta}</p>
-                            <p>🕒 Recibido: ${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                            <p>💰 Total: $${p.total_venta}</p>
                         </div>
                         ${botonHTML}
                     `;
@@ -113,14 +111,12 @@
                 });
 
             } catch (err) {
-                console.error("Fallo de carga:", err);
-                container.innerHTML = '<div class="loader">❌ Error al conectar. Verifica tu conexión.</div>';
+                container.innerHTML = `<div class="error-box"><h3>💥 Fallo Crítico</h3><p>${err.message}</p></div>`;
             }
         }
 
         async function cambiarEstatus(id, nuevoEstatus) {
-            // Confirmación visual antes de mover el estado
-            if (!confirm(`¿Mover pedido al estado ${nuevoEstatus.toUpperCase()}?`)) return;
+            if (!confirm(`¿Mover pedido a ${nuevoEstatus.toUpperCase()}?`)) return;
 
             try {
                 const { error } = await supabaseClient
@@ -129,19 +125,14 @@
                     .eq('id', id);
 
                 if (error) throw error;
-
-                // Refresco inmediato de la lista
                 cargarPedidos();
             } catch (err) {
-                alert("No se pudo actualizar el estatus. Intenta de nuevo.");
+                alert("Error al actualizar: " + err.message);
             }
         }
 
-        // Carga al iniciar
+        // Inicio
         cargarPedidos();
-        
-        // Auto-refresco cada minuto
-        setInterval(cargarPedidos, 60000);
     </script>
 </body>
 </html>
