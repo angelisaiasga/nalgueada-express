@@ -7,72 +7,81 @@
     <style>
         :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --gris: #f4f4f4; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--gris); color: #333; padding: 20px; }
+        body { background-color: var(--gris); color: #333; padding: 20px; min-height: 100vh; }
         
-        h2 { color: var(--azul); margin-bottom: 20px; text-align: center; }
+        header { text-align: center; margin-bottom: 30px; }
+        h2 { color: var(--azul); font-size: 1.8rem; }
+        .subtitle { font-size: 0.9rem; color: #666; margin-top: 5px; }
         
+        #listaPedidos { width: 100%; max-width: 600px; margin: 0 auto; }
+
         .pedido-card { 
-            background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 8px solid #ccc;
+            background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 10px solid #ccc;
+            transition: transform 0.2s;
         }
         
-        /* Colores dinámicos por estatus */
-        .status-pendiente { border-left-color: #ff4d4d; } /* Rojo */
-        .status-atendido { border-left-color: #FFA500; }  /* Naranja */
-        .status-en_ruta { border-left-color: #4BB543; }    /* Verde */
-
-        .info-cliente { margin-bottom: 15px; }
-        .info-cliente b { font-size: 1.1rem; color: var(--azul); }
-        .info-cliente p { font-size: 0.9rem; color: #666; margin-top: 5px; }
+        /* Colores por Estatus */
+        .status-pendiente { border-left-color: #ff4d4d; }
+        .status-atendido { border-left-color: #FFA500; }
+        .status-en_ruta { border-left-color: #4BB543; }
 
         .badge { 
-            display: inline-block; padding: 4px 10px; border-radius: 5px; 
-            font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px;
+            display: inline-block; padding: 5px 12px; border-radius: 50px; 
+            font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-bottom: 15px;
         }
         .badge-pendiente { background: #ffebeb; color: #ff4d4d; }
         .badge-atendido { background: #fff5e6; color: #FFA500; }
         .badge-en_ruta { background: #ebfaeb; color: #4BB543; }
 
-        .btn-accion { 
-            width: 100%; padding: 12px; border: none; border-radius: 8px; 
-            font-weight: bold; cursor: pointer; text-transform: uppercase;
-            transition: 0.3s; color: white;
-        }
-        .btn-atender { background-color: #FFA500; }
-        .btn-rutear { background-color: #4BB543; }
-        .btn-entregar { background-color: var(--azul); }
+        .info-cliente b { font-size: 1.2rem; display: block; margin-bottom: 5px; }
+        .info-cliente p { font-size: 0.95rem; color: #555; line-height: 1.6; }
 
-        .loader { text-align: center; padding: 50px; color: var(--azul); font-weight: bold; }
+        .btn-accion { 
+            width: 100%; margin-top: 20px; padding: 15px; border: none; border-radius: 10px; 
+            font-weight: bold; cursor: pointer; text-transform: uppercase;
+            font-size: 0.9rem; transition: 0.3s; color: white;
+        }
+        .btn-atender { background-color: #FFA500; box-shadow: 0 4px 12px rgba(255,165,0,0.3); }
+        .btn-rutear { background-color: #4BB543; box-shadow: 0 4px 12px rgba(75,181,67,0.3); }
+        .btn-entregar { background-color: var(--azul); box-shadow: 0 4px 12px rgba(0,86,145,0.3); }
+
+        .loader { text-align: center; padding: 50px; color: var(--azul); font-style: italic; }
     </style>
 </head>
 <body>
 
-    <h2>📦 Control de Entregas</h2>
+    <header>
+        <h2>📦 Control de Entregas</h2>
+        <p class="subtitle">Panel de Despacho Logístico</p>
+    </header>
+
     <div id="listaPedidos">
-        <div class="loader">Cargando pedidos activos...</div>
+        <div class="loader">Sincronizando con Supabase...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // CONFIGURACIÓN (Asegúrate de que sean las mismas que en menú/catálogo)
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co'.trim();
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // Reemplaza con tu llave
+        const S_KEY = 'TU_ANON_KEY_AQUI'.trim(); 
         const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
         async function cargarPedidos() {
             const container = document.getElementById('listaPedidos');
             
             try {
-                // Consultamos pedidos que NO estén entregados ni cancelados
+                // Filtro optimizado para evitar Error 400
                 const { data: pedidos, error } = await supabaseClient
                     .from('pedidos')
                     .select('*')
-                    .not('estatus', 'in', '("entregado","cancelado")')
+                    .or('estatus.eq.pendiente,estatus.eq.atendido,estatus.eq.en_ruta')
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
 
-                if (pedidos.length === 0) {
-                    container.innerHTML = '<div class="loader">✅ No hay pedidos pendientes. ¡Buen trabajo!</div>';
+                if (!pedidos || pedidos.length === 0) {
+                    container.innerHTML = '<div class="loader" style="color: #4BB543;">✅ No hay entregas pendientes.</div>';
                     return;
                 }
 
@@ -81,14 +90,13 @@
                     const card = document.createElement('div');
                     card.className = `pedido-card status-${p.estatus}`;
                     
-                    // Definimos el botón según el estado actual
                     let botonHTML = '';
                     if (p.estatus === 'pendiente') {
-                        botonHTML = `<button class="btn-accion btn-atender" onclick="cambiarEstatus('${p.id}', 'atendido')">MARCAR COMO ATENDIDO</button>`;
+                        botonHTML = `<button class="btn-accion btn-atender" onclick="cambiarEstatus('${p.id}', 'atendido')">Marcar como Atendido</button>`;
                     } else if (p.estatus === 'atendido') {
-                        botonHTML = `<button class="btn-accion btn-rutear" onclick="cambiarEstatus('${p.id}', 'en_ruta')">ENVIAR EN RUTA 🚀</button>`;
+                        botonHTML = `<button class="btn-accion btn-rutear" onclick="cambiarEstatus('${p.id}', 'en_ruta')">Enviar en Ruta (Partner 🚚)</button>`;
                     } else if (p.estatus === 'en_ruta') {
-                        botonHTML = `<button class="btn-accion btn-entregar" onclick="cambiarEstatus('${p.id}', 'entregado')">CONFIRMAR ENTREGA ✅</button>`;
+                        botonHTML = `<button class="btn-accion btn-entregar" onclick="cambiarEstatus('${p.id}', 'entregado')">Confirmar Entrega ✅</button>`;
                     }
 
                     card.innerHTML = `
@@ -96,8 +104,8 @@
                         <div class="info-cliente">
                             <b>${p.nombre_cliente}</b>
                             <p>📱 WhatsApp: ${p.whatsapp_cliente}</p>
-                            <p>💰 Total: $${p.total_venta}</p>
-                            <p>🕒 Fecha: ${new Date(p.created_at).toLocaleString()}</p>
+                            <p>💰 Total Pedido: $${p.total_venta}</p>
+                            <p>🕒 Recibido: ${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                         </div>
                         ${botonHTML}
                     `;
@@ -105,14 +113,14 @@
                 });
 
             } catch (err) {
-                console.error(err);
-                container.innerHTML = '<div class="loader">❌ Error al conectar con Supabase.</div>';
+                console.error("Fallo de carga:", err);
+                container.innerHTML = '<div class="loader">❌ Error al conectar. Verifica tu conexión.</div>';
             }
         }
 
         async function cambiarEstatus(id, nuevoEstatus) {
-            const confirmacion = confirm(`¿Cambiar pedido a "${nuevoEstatus.toUpperCase()}"?`);
-            if (!confirmacion) return;
+            // Confirmación visual antes de mover el estado
+            if (!confirm(`¿Mover pedido al estado ${nuevoEstatus.toUpperCase()}?`)) return;
 
             try {
                 const { error } = await supabaseClient
@@ -122,19 +130,18 @@
 
                 if (error) throw error;
 
-                // Recargamos la lista para ver los cambios
+                // Refresco inmediato de la lista
                 cargarPedidos();
             } catch (err) {
-                alert("Error al actualizar el pedido");
-                console.error(err);
+                alert("No se pudo actualizar el estatus. Intenta de nuevo.");
             }
         }
 
-        // Carga inicial
+        // Carga al iniciar
         cargarPedidos();
         
-        // Auto-refresco cada 30 segundos para nuevos pedidos
-        setInterval(cargarPedidos, 30000);
+        // Auto-refresco cada minuto
+        setInterval(cargarPedidos, 60000);
     </script>
 </body>
 </html>
