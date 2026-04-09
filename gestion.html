@@ -3,136 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión Logística - Nalgueada Express</title>
+    <title>Gestión PRO - Nalgueada Express</title>
     <style>
-        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --gris: #f4f4f4; }
+        :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --gris: #f4f4f4; --verde: #25D366; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: var(--gris); color: #333; padding: 20px; }
-        header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid var(--azul); padding-bottom: 10px; }
+        body { background-color: var(--gris); color: #333; padding: 15px; }
+
+        header { text-align: center; padding: 10px 0; }
         
-        /* Estilo de Tarjetas */
+        /* Buscador */
+        .search-box { width: 100%; max-width: 500px; margin: 10px auto; position: relative; }
+        #searchInput { width: 100%; padding: 12px 20px; border-radius: 50px; border: 2px solid #ddd; outline: none; }
+
+        /* Pestañas (Tabs) */
+        .tabs { display: flex; justify-content: center; gap: 5px; margin-bottom: 20px; }
+        .tab { 
+            padding: 10px 15px; border-radius: 10px; background: #ddd; cursor: pointer; 
+            font-size: 0.8rem; font-weight: bold; border: none; flex: 1; max-width: 120px;
+        }
+        .tab.active { background: var(--azul); color: white; }
+
+        /* Tarjetas de Pedido */
+        #listaPedidos { width: 100%; max-width: 500px; margin: 0 auto; }
         .pedido-card { 
-            background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 8px solid #ccc;
+            background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; border-top: 5px solid #ccc;
         }
-        .status-pendiente { border-left-color: #ff4d4d; }
-        .status-atendido { border-left-color: #FFA500; }
-        .status-en_ruta { border-left-color: #4BB543; }
+        .status-pendiente { border-top-color: #ff4d4d; }
+        .status-atendido { border-top-color: #FFA500; }
+        .status-en_ruta { border-top-color: #4BB543; }
 
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
-        .badge-pendiente { background: #ffebeb; color: #ff4d4d; }
-        .badge-atendido { background: #fff5e6; color: #FFA500; }
-        .badge-en_ruta { background: #ebfaeb; color: #4BB543; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .cliente-name { font-size: 1.1rem; font-weight: bold; color: var(--azul); }
+        .folio { font-family: monospace; font-size: 0.75rem; color: #888; }
 
-        .btn-accion { 
-            width: 100%; margin-top: 15px; padding: 12px; border: none; border-radius: 8px; 
-            font-weight: bold; cursor: pointer; text-transform: uppercase; color: white;
+        /* Botones de Acción Rápida */
+        .quick-actions { display: flex; gap: 10px; margin: 10px 0; }
+        .btn-mini { 
+            flex: 1; padding: 8px; border-radius: 8px; border: none; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.8rem; font-weight: bold;
         }
-        .btn-atender { background-color: #FFA500; }
-        .btn-rutear { background-color: #4BB543; }
-        .btn-entregar { background-color: var(--azul); }
+        .btn-wa { background: var(--verde); color: white; }
+        .btn-map { background: #4285F4; color: white; }
 
-        /* Estilos de Error en Pantalla */
-        .error-box { background: #fff1f0; border: 1px solid #ffa39e; padding: 20px; border-radius: 10px; color: #cf1322; text-align: center; }
+        /* Botón de Estatus */
+        .btn-main { 
+            width: 100%; padding: 12px; border-radius: 10px; border: none; 
+            font-weight: bold; cursor: pointer; text-transform: uppercase; color: white; margin-top: 5px;
+        }
+        .btn-atender { background: #FFA500; }
+        .btn-rutear { background: #4BB543; }
+        .btn-entregar { background: var(--azul); }
+
         .loader { text-align: center; padding: 40px; color: var(--azul); font-weight: bold; }
     </style>
 </head>
 <body>
 
     <header>
-        <h2>📦 Gestión de Pedidos</h2>
-        <p>Control de estados - Peugeot Partner</p>
+        <h2>📦 Gestor Nalgueada</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Buscar cliente o folio..." onkeyup="filtrar()">
+        </div>
     </header>
 
+    <div class="tabs">
+        <button class="tab active" onclick="cambiarTab('todos', this)">TODOS</button>
+        <button class="tab" onclick="cambiarTab('pendiente', this)">NUEVOS</button>
+        <button class="tab" onclick="cambiarTab('atendido', this)">BODEGA</button>
+        <button class="tab" onclick="cambiarTab('en_ruta', this)">PARTNER</button>
+    </div>
+
     <div id="listaPedidos">
-        <div class="loader">Intentando conectar con Supabase...</div>
+        <div class="loader">Sincronizando logística...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // CONFIGURACIÓN CENTRALIZADA
         const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co'.trim();
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); // <--- PEGA TU KEY AQUÍ
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim();
         const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
-        async function cargarPedidos() {
-            const container = document.getElementById('listaPedidos');
-            
+        let dataGlobal = [];
+        let filtroEstatus = 'todos';
+
+        async function cargarData() {
             try {
-                // CONSULTA SIMPLE: Sin filtros complejos ni ordenamientos para evitar errores 400/42703
-                const { data: pedidos, error, status } = await supabaseClient
-                    .from('pedidos')
-                    .select('*');
-
-                if (error) {
-                    container.innerHTML = `
-                        <div class="error-box">
-                            <h3>❌ Error de Conexión</h3>
-                            <p>${error.message}</p>
-                            <p><small>Código HTTP: ${status}</small></p>
-                        </div>`;
-                    return;
-                }
-
-                // Filtrado y Ordenamiento en el Cliente (JavaScript)
-                const activos = pedidos
-                    .filter(p => ['pendiente', 'atendido', 'en_ruta'].includes(p.estatus))
-                    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-
-                if (activos.length === 0) {
-                    container.innerHTML = '<div class="loader">✅ No hay pedidos activos por entregar.</div>';
-                    return;
-                }
-
-                container.innerHTML = '';
-                activos.forEach(p => {
-                    const card = document.createElement('div');
-                    card.className = `pedido-card status-${p.estatus}`;
-                    
-                    let botonHTML = '';
-                    if (p.estatus === 'pendiente') {
-                        botonHTML = `<button class="btn-accion btn-atender" onclick="cambiarEstatus('${p.id}', 'atendido')">Marcar como Atendido</button>`;
-                    } else if (p.estatus === 'atendido') {
-                        botonHTML = `<button class="btn-accion btn-rutear" onclick="cambiarEstatus('${p.id}', 'en_ruta')">Enviar a Ruta 🚚</button>`;
-                    } else if (p.estatus === 'en_ruta') {
-                        botonHTML = `<button class="btn-accion btn-entregar" onclick="cambiarEstatus('${p.id}', 'entregado')">Finalizar Entrega ✅</button>`;
-                    }
-
-                    card.innerHTML = `
-                        <div class="badge badge-${p.estatus}">${p.estatus}</div>
-                        <div class="info-cliente">
-                            <b>${p.nombre_cliente}</b>
-                            <p>📱 WhatsApp: ${p.whatsapp_cliente}</p>
-                            <p>💰 Total: $${p.total_venta}</p>
-                        </div>
-                        ${botonHTML}
-                    `;
-                    container.appendChild(card);
-                });
-
-            } catch (err) {
-                container.innerHTML = `<div class="error-box"><h3>💥 Fallo Crítico</h3><p>${err.message}</p></div>`;
-            }
-        }
-
-        async function cambiarEstatus(id, nuevoEstatus) {
-            if (!confirm(`¿Mover pedido a ${nuevoEstatus.toUpperCase()}?`)) return;
-
-            try {
-                const { error } = await supabaseClient
-                    .from('pedidos')
-                    .update({ estatus: nuevoEstatus })
-                    .eq('id', id);
-
+                const { data, error } = await supabaseClient.from('pedidos').select('*');
                 if (error) throw error;
-                cargarPedidos();
-            } catch (err) {
-                alert("Error al actualizar: " + err.message);
-            }
+                dataGlobal = data || [];
+                filtrar();
+            } catch (e) { document.getElementById('listaPedidos').innerHTML = "Error de conexión"; }
         }
 
-        // Inicio
-        cargarPedidos();
+        function cambiarTab(estatus, btn) {
+            filtroEstatus = estatus;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            filtrar();
+        }
+
+        function filtrar() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            let filtrados = dataGlobal.filter(p => ['pendiente', 'atendido', 'en_ruta'].includes(p.estatus));
+
+            if (filtroEstatus !== 'todos') {
+                filtrados = filtrados.filter(p => p.estatus === filtroEstatus);
+            }
+
+            if (query) {
+                filtrados = filtrados.filter(p => 
+                    p.nombre_cliente.toLowerCase().includes(query) || 
+                    p.id.toLowerCase().includes(query)
+                );
+            }
+
+            render(filtrados);
+        }
+
+        function render(lista) {
+            const container = document.getElementById('listaPedidos');
+            container.innerHTML = lista.length === 0 ? '<div class="loader">Sin pedidos en esta sección</div>' : '';
+
+            lista.forEach(p => {
+                const card = document.createElement('div');
+                card.className = `pedido-card status-${p.estatus}`;
+                
+                let btnAccion = '';
+                if (p.estatus === 'pendiente') btnAccion = `<button class="btn-main btn-atender" onclick="update('${p.id}','atendido')">LISTO EN BODEGA</button>`;
+                else if (p.estatus === 'atendido') btnAccion = `<button class="btn-main btn-rutear" onclick="update('${p.id}','en_ruta')">SUBIR A PARTNER 🚚</button>`;
+                else if (p.estatus === 'en_ruta') btnAccion = `<button class="btn-main btn-entregar" onclick="update('${p.id}','entregado')">ENTREGADO ✅</button>`;
+
+                // Mensaje WA prellenado
+                const msgWA = encodeURIComponent(`¡Hola ${p.nombre_cliente}! Soy de Nalgueada Express. Estoy procesando tu pedido #${p.id.slice(0,5)}.`);
+                
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <span class="folio">#${p.id.slice(0,8)}</span>
+                            <div class="cliente-name">${p.nombre_cliente}</div>
+                        </div>
+                        <div style="text-align:right">
+                            <b style="color:var(--azul)">$${p.total_venta}</b>
+                        </div>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="btn-mini btn-wa" onclick="window.open('https://wa.me/${p.whatsapp_cliente}?text=${msgWA}')">📱 WHATSAPP</button>
+                        <button class="btn-mini btn-map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${p.direccion_entrega || 'Tecamac'}')">📍 MAPA</button>
+                    </div>
+                    ${btnAccion}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function update(id, st) {
+            const { error } = await supabaseClient.from('pedidos').update({ estatus: st }).eq('id', id);
+            if (!error) cargarData();
+        }
+
+        cargarData();
+        setInterval(cargarData, 60000); // Refresco cada minuto
     </script>
 </body>
 </html>
