@@ -46,7 +46,7 @@
         <div class="tracker-id" id="trackerID">FOLIO: #---</div>
         <div class="tracker-status">
             <div id="trackerDot" class="status-dot"></div>
-            <span id="trackerText">Sincronizando logística...</span>
+            <span id="trackerText">Sincronizando con base de datos...</span>
         </div>
     </div>
 
@@ -76,13 +76,13 @@
 
             document.getElementById('display-name').innerText = nombre;
 
-            // 1. Validar Carrito Local
+            // Validar Carrito Local
             const carritoLocal = JSON.parse(localStorage.getItem('carrito')) || [];
             if (carritoLocal.length > 0) {
                 document.getElementById('btnIrCarrito').style.display = 'block';
             }
 
-            // 2. BUSCAR PEDIDO ACTIVO
+            // BUSCAR PEDIDO ACTIVO Y ACTIVAR REALTIME
             try {
                 const { data: pedidos, error } = await supabaseClient
                     .from('pedidos')
@@ -92,52 +92,54 @@
 
                 if (error) throw error;
 
+                // Buscamos el pedido que no esté finalizado
                 const pedidoActivo = pedidos.find(p => p.estatus !== 'entregado' && p.estatus !== 'cancelado');
 
                 if (pedidoActivo) {
-                    mostrarTracker(pedidoActivo);
-                    // 3. ACTIVAR ESCUCHA EN TIEMPO REAL
-                    suscribirRealtime(pedidoActivo.id);
+                    actualizarUI(pedidoActivo);
+                    suscribirACambios(pedidoActivo.id);
                 }
             } catch (err) {
-                console.error("Error al cargar estatus:", err);
+                console.error("Error en tracker:", err);
             }
         }
 
-        function mostrarTracker(pedido) {
-            const mensajesEstatus = {
+        function actualizarUI(pedido) {
+            const tracker = document.getElementById('orderTracker');
+            const trackerText = document.getElementById('trackerText');
+            const trackerID = document.getElementById('trackerID');
+            const dot = document.getElementById('trackerDot');
+
+            const mensajes = {
                 'pendiente': 'Estamos preparando tu pedido...',
-                'atendido': '¡Tu pedido ya está en Bodega! ✅',
+                'atendido': '¡Tu pedido está listo en Bodega! ✅',
                 'en_ruta': '¡La Peugeot Partner va en camino! 🚚'
             };
 
-            const coloresDot = {
-                'pendiente': '#FDB813',
-                'atendido': '#4BB543',
-                'en_ruta': '#FFFFFF'
+            const colores = {
+                'pendiente': '#FDB813', // Amarillo
+                'atendido': '#4BB543',  // Verde
+                'en_ruta': '#FFFFFF'    // Blanco
             };
 
-            document.getElementById('orderTracker').style.display = 'block';
-            document.getElementById('trackerID').innerText = `FOLIO: #${pedido.id.toString().slice(-8)}`;
-            document.getElementById('trackerText').innerText = mensajesEstatus[pedido.estatus.toLowerCase()] || 'Procesando...';
-            document.getElementById('trackerDot').style.backgroundColor = coloresDot[pedido.estatus.toLowerCase()] || '#FDB813';
+            const est = (pedido.estatus || 'pendiente').toLowerCase();
+
+            tracker.style.display = 'block';
+            trackerID.innerText = `FOLIO: #${pedido.id.toString().slice(-8)}`;
+            trackerText.innerText = mensajes[est] || 'Procesando registro...';
+            dot.style.backgroundColor = colores[est] || '#FDB813';
         }
 
-        function suscribirRealtime(pedidoId) {
-            console.log("🔔 Suscrito a cambios para el pedido:", pedidoId);
+        function suscribirACambios(id) {
+            console.log("🔔 Escuchando cambios para pedido:", id);
             
             supabaseClient
-                .channel('seguimiento-cliente')
+                .channel('room1')
                 .on('postgres_changes', 
-                    { 
-                        event: 'UPDATE', 
-                        schema: 'public', 
-                        table: 'pedidos', 
-                        filter: `id=eq.${pedidoId}` 
-                    }, 
+                    { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${id}` }, 
                     (payload) => {
-                        console.log("✨ Cambio de estatus detectado:", payload.new.estatus);
-                        mostrarTracker(payload.new);
+                        console.log("✨ Cambio de estatus en tiempo real:", payload.new.estatus);
+                        actualizarUI(payload.new);
                     }
                 )
                 .subscribe();
