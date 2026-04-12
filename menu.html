@@ -8,19 +8,29 @@
         :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --verde: #4BB543; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--azul); color: var(--blanco); padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
         .header-status { width: 100%; text-align: center; margin-bottom: 25px; }
         .header-status h2 { color: var(--amarillo); font-size: 1.8rem; margin-top: 5px; }
-        #orderTracker { width: 100%; max-width: 400px; background: rgba(255,255,255,0.1); border: 2px solid var(--amarillo); border-radius: 15px; padding: 15px; margin-bottom: 20px; display: none; }
+
+        /* Widget de Rastreo */
+        #orderTracker { 
+            width: 100%; max-width: 400px; background: rgba(255,255,255,0.1); 
+            border: 2px solid var(--amarillo); border-radius: 15px; padding: 15px; 
+            margin-bottom: 20px; display: none; 
+        }
         .tracker-title { font-size: 0.75rem; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px; }
         .tracker-id { font-family: monospace; font-weight: bold; color: var(--amarillo); font-size: 1.1rem; }
         .tracker-status { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 1rem; }
         .status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--amarillo); animation: pulse 1.5s infinite; }
+
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
         .btn-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
         .main-button { width: 100%; padding: 18px; border-radius: 50px; font-weight: bold; text-transform: uppercase; border: none; cursor: pointer; text-decoration: none; text-align: center; font-size: 1rem; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .btn-pide { background: var(--amarillo); color: #000; }
         .btn-sec { background: #FFFFFF; color: var(--azul); }
         #btnIrCarrito { background: var(--verde); color: white; display: none; border: 2px solid white; }
+
         .btn-logout { margin-top: auto; padding: 20px; background: none; border: none; color: #FF9494; cursor: pointer; font-size: 0.9rem; text-decoration: underline; }
     </style>
 </head>
@@ -36,7 +46,7 @@
         <div class="tracker-id" id="trackerID">FOLIO: #---</div>
         <div class="tracker-status">
             <div id="trackerDot" class="status-dot"></div>
-            <span id="trackerText">Consultando estatus...</span>
+            <span id="trackerText">Verificando pedido...</span>
         </div>
     </div>
 
@@ -65,16 +75,17 @@
             }
             document.getElementById('display-name').innerText = nombre;
 
-            // Carrito local
+            // Mostrar botón de carrito si hay algo guardado
             const carritoLocal = JSON.parse(localStorage.getItem('carrito')) || [];
             if (carritoLocal.length > 0) document.getElementById('btnIrCarrito').style.display = 'block';
 
-            await buscarPedido();
+            // Buscar pedido activo
+            await buscarUltimoEstatus();
         }
 
-        async function buscarPedido() {
+        async function buscarUltimoEstatus() {
             try {
-                // Buscamos el pedido más reciente basado en fecha_creacion
+                // Buscamos solo el pedido más reciente que NO esté entregado
                 const { data, error } = await supabaseClient
                     .from('pedidos')
                     .select('*')
@@ -86,55 +97,58 @@
 
                 if (data && data.length > 0) {
                     const pedido = data[0];
-                    // Si el pedido ya fue entregado, no mostramos el tracker
-                    if (pedido.estatus === 'entregado') {
-                        document.getElementById('orderTracker').style.display = 'none';
-                        return;
-                    }
                     
-                    actualizarInterfaz(pedido);
-                    conectarRealtime(pedido.id);
+                    // Si el estatus es entregado, ocultamos el tracker
+                    if (pedido.estatus.toLowerCase() === 'entregado') {
+                        document.getElementById('orderTracker').style.display = 'none';
+                    } else {
+                        pintarEstatus(pedido);
+                        suscribirRealtime(pedido.id);
+                    }
                 }
             } catch (err) {
-                console.error("Error cargando pedido:", err);
+                console.error("Error al sincronizar:", err);
             }
         }
 
-        function actualizarInterfaz(pedido) {
+        function pintarEstatus(pedido) {
             const tracker = document.getElementById('orderTracker');
             const trackerText = document.getElementById('trackerText');
             const trackerID = document.getElementById('trackerID');
             const dot = document.getElementById('trackerDot');
 
-            // Normalizamos el estatus a minúsculas
+            // Normalización para evitar fallos por mayúsculas o espacios
             const est = (pedido.estatus || 'pendiente').toLowerCase().trim();
 
-            const mensajes = {
+            const mapaMensajes = {
                 'pendiente': 'Estamos preparando tu pedido...',
                 'atendido': '¡Tu pedido ya está en Bodega! ✅',
                 'en_ruta': '¡La Peugeot Partner va en camino! 🚚'
             };
 
-            const colores = {
-                'pendiente': '#FDB813',
-                'atendido': '#4BB543',
-                'en_ruta': '#FFFFFF'
+            const mapaColores = {
+                'pendiente': '#FDB813', // Amarillo
+                'atendido': '#4BB543',  // Verde
+                'en_ruta': '#FFFFFF'    // Blanco
             };
 
             tracker.style.display = 'block';
             trackerID.innerText = `FOLIO: #${pedido.id.toString().slice(-8)}`;
-            trackerText.innerText = mensajes[est] || 'Procesando entrega...';
-            dot.style.backgroundColor = colores[est] || '#FDB813';
+            trackerText.innerText = mapaMensajes[est] || 'Procesando entrega...';
+            if (dot) dot.style.backgroundColor = mapaColores[est] || '#FDB813';
         }
 
-        function conectarRealtime(id) {
+        function suscribirRealtime(pedidoId) {
+            // Eliminamos canales previos para evitar duplicidad al recargar
+            supabaseClient.removeAllChannels();
+
             supabaseClient
-                .channel('cambios-menu')
+                .channel('cambios-estatus-cliente')
                 .on('postgres_changes', 
-                    { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${id}` }, 
+                    { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${pedidoId}` }, 
                     (payload) => {
-                        console.log("ACTUALIZACIÓN RECIBIDA:", payload.new);
-                        actualizarInterfaz(payload.new);
+                        console.log("Cambio detectado en tiempo real:", payload.new.estatus);
+                        pintarEstatus(payload.new);
                     }
                 )
                 .subscribe();
@@ -145,6 +159,7 @@
             window.location.replace('identificacion.html');
         }
 
+        // Inicio
         inicializarMenu();
     </script>
 </body>
