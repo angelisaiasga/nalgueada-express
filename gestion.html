@@ -11,11 +11,9 @@
 
         header { text-align: center; padding: 10px 0; }
         
-        /* Buscador */
         .search-box { width: 100%; max-width: 500px; margin: 10px auto; position: relative; }
         #searchInput { width: 100%; padding: 12px 20px; border-radius: 50px; border: 2px solid #ddd; outline: none; }
 
-        /* Pestañas (Tabs) */
         .tabs { display: flex; justify-content: center; gap: 5px; margin-bottom: 20px; }
         .tab { 
             padding: 10px 15px; border-radius: 10px; background: #ddd; cursor: pointer; 
@@ -23,37 +21,36 @@
         }
         .tab.active { background: var(--azul); color: white; }
 
-        /* Tarjetas de Pedido */
         #listaPedidos { width: 100%; max-width: 500px; margin: 0 auto; }
         .pedido-card { 
             background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; border-top: 5px solid #ccc;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; border-left: 8px solid #ccc; /* Cambiado a lateral para mejor vista */
         }
-        .status-pendiente { border-top-color: #ff4d4d; }
-        .status-atendido { border-top-color: #FFA500; }
-        .status-en_ruta { border-top-color: #4BB543; }
+        .status-pendiente { border-left-color: #ff4d4d; }
+        .status-atendido { border-left-color: #FFA500; }
+        .status-en_ruta { border-left-color: #4BB543; }
 
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .cliente-name { font-size: 1.1rem; font-weight: bold; color: var(--azul); }
         .folio { font-family: monospace; font-size: 0.75rem; color: #888; }
 
-        /* Botones de Acción Rápida */
         .quick-actions { display: flex; gap: 10px; margin: 10px 0; }
         .btn-mini { 
-            flex: 1; padding: 8px; border-radius: 8px; border: none; cursor: pointer; 
+            flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; 
             display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.8rem; font-weight: bold;
         }
         .btn-wa { background: var(--verde); color: white; }
         .btn-map { background: #4285F4; color: white; }
 
-        /* Botón de Estatus */
         .btn-main { 
-            width: 100%; padding: 12px; border-radius: 10px; border: none; 
+            width: 100%; padding: 14px; border-radius: 10px; border: none; 
             font-weight: bold; cursor: pointer; text-transform: uppercase; color: white; margin-top: 5px;
+            transition: 0.3s;
         }
         .btn-atender { background: #FFA500; }
         .btn-rutear { background: #4BB543; }
         .btn-entregar { background: var(--azul); }
+        .btn-main:active { transform: scale(0.98); }
 
         .loader { text-align: center; padding: 40px; color: var(--azul); font-weight: bold; }
     </style>
@@ -80,8 +77,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co'.trim();
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim();
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok';
         const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
         let dataGlobal = [];
@@ -89,11 +86,17 @@
 
         async function cargarData() {
             try {
-                const { data, error } = await supabaseClient.from('pedidos').select('*');
+                const { data, error } = await supabaseClient
+                    .from('pedidos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
                 if (error) throw error;
                 dataGlobal = data || [];
                 filtrar();
-            } catch (e) { document.getElementById('listaPedidos').innerHTML = "Error de conexión"; }
+            } catch (e) { 
+                document.getElementById('listaPedidos').innerHTML = "Error de conexión: " + e.message; 
+            }
         }
 
         function cambiarTab(estatus, btn) {
@@ -105,6 +108,7 @@
 
         function filtrar() {
             const query = document.getElementById('searchInput').value.toLowerCase();
+            // Solo mostramos los que no están entregados en la vista principal
             let filtrados = dataGlobal.filter(p => ['pendiente', 'atendido', 'en_ruta'].includes(p.estatus));
 
             if (filtroEstatus !== 'todos') {
@@ -114,7 +118,7 @@
             if (query) {
                 filtrados = filtrados.filter(p => 
                     p.nombre_cliente.toLowerCase().includes(query) || 
-                    p.id.toLowerCase().includes(query)
+                    p.id.toString().includes(query)
                 );
             }
 
@@ -123,7 +127,7 @@
 
         function render(lista) {
             const container = document.getElementById('listaPedidos');
-            container.innerHTML = lista.length === 0 ? '<div class="loader">Sin pedidos en esta sección</div>' : '';
+            container.innerHTML = lista.length === 0 ? '<div class="loader">Sin pedidos pendientes</div>' : '';
 
             lista.forEach(p => {
                 const card = document.createElement('div');
@@ -134,22 +138,22 @@
                 else if (p.estatus === 'atendido') btnAccion = `<button class="btn-main btn-rutear" onclick="update('${p.id}','en_ruta')">SUBIR A PARTNER 🚚</button>`;
                 else if (p.estatus === 'en_ruta') btnAccion = `<button class="btn-main btn-entregar" onclick="update('${p.id}','entregado')">ENTREGADO ✅</button>`;
 
-                // Mensaje WA prellenado
-                const msgWA = encodeURIComponent(`¡Hola ${p.nombre_cliente}! Soy de Nalgueada Express. Estoy procesando tu pedido #${p.id.slice(0,5)}.`);
+                const msgWA = encodeURIComponent(`¡Hola ${p.nombre_cliente}! Soy de Nalgueada Express. Estoy procesando tu pedido.`);
+                const direccionMapa = p.direccion_entrega ? encodeURIComponent(p.direccion_entrega) : 'Tecamac';
                 
                 card.innerHTML = `
                     <div class="card-header">
                         <div>
-                            <span class="folio">#${p.id.slice(0,8)}</span>
+                            <span class="folio">#${p.id.toString().slice(-6)}</span>
                             <div class="cliente-name">${p.nombre_cliente}</div>
                         </div>
                         <div style="text-align:right">
-                            <b style="color:var(--azul)">$${p.total_venta}</b>
+                            <b style="color:var(--azul); font-size:1.2rem">$${p.total_venta}</b>
                         </div>
                     </div>
                     <div class="quick-actions">
                         <button class="btn-mini btn-wa" onclick="window.open('https://wa.me/${p.whatsapp_cliente}?text=${msgWA}')">📱 WHATSAPP</button>
-                        <button class="btn-mini btn-map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${p.direccion_entrega || 'Tecamac'}')">📍 MAPA</button>
+                        <button class="btn-mini btn-map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${direccionMapa}')">📍 MAPA</button>
                     </div>
                     ${btnAccion}
                 `;
@@ -158,12 +162,31 @@
         }
 
         async function update(id, st) {
-            const { error } = await supabaseClient.from('pedidos').update({ estatus: st }).eq('id', id);
-            if (!error) cargarData();
+            // Cambio visual inmediato (Optimistic Update)
+            const index = dataGlobal.findIndex(p => p.id == id);
+            if (index !== -1) {
+                const previoEstado = dataGlobal[index].estatus;
+                dataGlobal[index].estatus = st;
+                filtrar(); // Re-renderiza al instante
+
+                const { error } = await supabaseClient
+                    .from('pedidos')
+                    .update({ estatus: st })
+                    .eq('id', id);
+
+                if (error) {
+                    alert("Error al actualizar en base de datos");
+                    dataGlobal[index].estatus = previoEstado; // Revertir si falla
+                    filtrar();
+                }
+            }
         }
 
+        // Carga inicial
         cargarData();
-        setInterval(cargarData, 60000); // Refresco cada minuto
+
+        // Refresco automático suave cada 30 segundos
+        setInterval(cargarData, 30000);
     </script>
 </body>
 </html>
