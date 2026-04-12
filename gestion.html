@@ -22,7 +22,7 @@
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .cliente-name { font-size: 1.1rem; font-weight: bold; color: var(--azul); }
         .quick-actions { display: flex; gap: 10px; margin: 10px 0; }
-        .btn-mini { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; color: white; }
+        .btn-mini { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; color: white; text-align: center; text-decoration: none; }
         .btn-main { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; color: white; margin-top: 5px; }
     </style>
 </head>
@@ -57,7 +57,12 @@
 
         async function cargarData() {
             try {
-                const { data, error } = await supabaseClient.from('pedidos').select('*');
+                // Usamos fecha_creacion para el orden tal como sale en tu tabla
+                const { data, error } = await supabaseClient
+                    .from('pedidos')
+                    .select('*')
+                    .order('fecha_creacion', { ascending: false });
+                
                 if (error) throw error;
                 dataGlobal = data || [];
                 filtrar();
@@ -75,15 +80,16 @@
 
         function filtrar() {
             const query = document.getElementById('searchInput').value.toLowerCase();
+            
             let filtrados = dataGlobal.map(p => ({
                 ...p,
-                tempEstatus: (p.estatus || p.estado || 'pendiente').toLowerCase().trim()
+                normalEstatus: (p.estatus || 'pendiente').toLowerCase().trim()
             }));
 
             if (filtroEstatus !== 'todos') {
-                filtrados = filtrados.filter(p => p.tempEstatus === filtroEstatus);
+                filtrados = filtrados.filter(p => p.normalEstatus === filtroEstatus);
             } else {
-                filtrados = filtrados.filter(p => p.tempEstatus !== 'entregado');
+                filtrados = filtrados.filter(p => p.normalEstatus !== 'entregado');
             }
 
             if (query) {
@@ -95,24 +101,24 @@
         function render(lista) {
             const container = document.getElementById('listaPedidos');
             if (lista.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:#888;">No hay pedidos</div>';
+                container.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">No hay pedidos</div>';
                 return;
             }
             container.innerHTML = '';
 
             lista.forEach(p => {
                 const card = document.createElement('div');
-                card.className = "pedido-card status-" + p.tempEstatus;
+                card.className = "pedido-card status-" + p.normalEstatus;
                 
                 let btnText = "Marcar Atendido";
                 let btnColor = "#FFA500";
                 let proximo = "atendido";
 
-                if (p.tempEstatus === 'atendido') { btnText = "Subir a Partner"; btnColor = "#4BB543"; proximo = "en_ruta"; }
-                else if (p.tempEstatus === 'en_ruta') { btnText = "Entregado ✅"; btnColor = "#005691"; proximo = "entregado"; }
+                if (p.normalEstatus === 'atendido') { btnText = "Subir a Partner"; btnColor = "#4BB543"; proximo = "en_ruta"; }
+                else if (p.normalEstatus === 'en_ruta') { btnText = "Entregado ✅"; btnColor = "#005691"; proximo = "entregado"; }
 
-                const msgWA = "Hola " + (p.nombre_cliente || "");
-                const mapsUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.direccion_entrega || "Tecamac");
+                const msgWA = encodeURIComponent("Hola " + (p.nombre_cliente || "") + ", soy de Nalgueada Express.");
+                const googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.direccion_entrega || "Tecamac");
 
                 card.innerHTML = `
                     <div class="card-header">
@@ -123,8 +129,8 @@
                         <b style="color:var(--azul)">$${p.total_venta || '0'}</b>
                     </div>
                     <div class="quick-actions">
-                        <button class="btn-mini" style="background:var(--verde)" onclick="window.open('https://wa.me/${p.whatsapp_cliente}?text=${msgWA}')">WHATSAPP</button>
-                        <button class="btn-mini" style="background:#4285F4" onclick="window.open('${mapsUrl}')">MAPA</button>
+                        <a href="https://wa.me/${p.whatsapp_cliente}?text=${msgWA}" target="_blank" class="btn-mini" style="background:var(--verde)">WHATSAPP</a>
+                        <a href="${googleMapsUrl}" target="_blank" class="btn-mini" style="background:#4285F4">MAPA</a>
                     </div>
                     <button class="btn-main" style="background:${btnColor}" onclick="update('${p.id}','${proximo}')">${btnText}</button>
                 `;
@@ -133,9 +139,17 @@
         }
 
         async function update(id, st) {
-            const { error } = await supabaseClient.from('pedidos').update({ estatus: st, estado: st }).eq('id', id);
-            if (!error) cargarData();
-            else alert("Error: " + error.message);
+            // Solo actualizamos 'estatus' que es la columna real
+            const { error } = await supabaseClient
+                .from('pedidos')
+                .update({ estatus: st })
+                .eq('id', id);
+
+            if (!error) {
+                cargarData();
+            } else {
+                alert("Error al actualizar: " + error.message);
+            }
         }
 
         cargarData();
