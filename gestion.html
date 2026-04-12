@@ -8,50 +8,28 @@
         :root { --azul: #005691; --amarillo: #FDB813; --blanco: #FFFFFF; --gris: #f4f4f4; --verde: #25D366; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--gris); color: #333; padding: 15px; }
-
         header { text-align: center; padding: 10px 0; }
-        
         .search-box { width: 100%; max-width: 500px; margin: 10px auto; position: relative; }
         #searchInput { width: 100%; padding: 12px 20px; border-radius: 50px; border: 2px solid #ddd; outline: none; }
-
         .tabs { display: flex; justify-content: center; gap: 5px; margin-bottom: 20px; }
-        .tab { 
-            padding: 10px 15px; border-radius: 10px; background: #ddd; cursor: pointer; 
-            font-size: 0.8rem; font-weight: bold; border: none; flex: 1; max-width: 120px;
-        }
+        .tab { padding: 10px 15px; border-radius: 10px; background: #ddd; cursor: pointer; font-size: 0.8rem; font-weight: bold; border: none; flex: 1; max-width: 120px; }
         .tab.active { background: var(--azul); color: white; }
-
         #listaPedidos { width: 100%; max-width: 500px; margin: 0 auto; }
-        .pedido-card { 
-            background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; border-left: 8px solid #ccc; /* Cambiado a lateral para mejor vista */
-        }
+        .pedido-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 8px solid #ccc; }
         .status-pendiente { border-left-color: #ff4d4d; }
         .status-atendido { border-left-color: #FFA500; }
         .status-en_ruta { border-left-color: #4BB543; }
-
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .cliente-name { font-size: 1.1rem; font-weight: bold; color: var(--azul); }
         .folio { font-family: monospace; font-size: 0.75rem; color: #888; }
-
         .quick-actions { display: flex; gap: 10px; margin: 10px 0; }
-        .btn-mini { 
-            flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.8rem; font-weight: bold;
-        }
+        .btn-mini { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.8rem; font-weight: bold; }
         .btn-wa { background: var(--verde); color: white; }
         .btn-map { background: #4285F4; color: white; }
-
-        .btn-main { 
-            width: 100%; padding: 14px; border-radius: 10px; border: none; 
-            font-weight: bold; cursor: pointer; text-transform: uppercase; color: white; margin-top: 5px;
-            transition: 0.3s;
-        }
+        .btn-main { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; color: white; margin-top: 5px; }
         .btn-atender { background: #FFA500; }
         .btn-rutear { background: #4BB543; }
         .btn-entregar { background: var(--azul); }
-        .btn-main:active { transform: scale(0.98); }
-
         .loader { text-align: center; padding: 40px; color: var(--azul); font-weight: bold; }
     </style>
 </head>
@@ -86,16 +64,12 @@
 
         async function cargarData() {
             try {
-                const { data, error } = await supabaseClient
-                    .from('pedidos')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
+                const { data, error } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
                 if (error) throw error;
                 dataGlobal = data || [];
                 filtrar();
             } catch (e) { 
-                document.getElementById('listaPedidos').innerHTML = "Error de conexión: " + e.message; 
+                document.getElementById('listaPedidos').innerHTML = "Error de conexión"; 
             }
         }
 
@@ -108,17 +82,26 @@
 
         function filtrar() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            // Solo mostramos los que no están entregados en la vista principal
-            let filtrados = dataGlobal.filter(p => ['pendiente', 'atendido', 'en_ruta'].includes(p.estatus));
+            
+            // NORMALIZACIÓN: Buscamos en 'estatus' o 'estado' y lo pasamos a minúsculas
+            let filtrados = dataGlobal.map(p => ({
+                ...p,
+                tempEstatus: (p.estatus || p.estado || 'pendiente').toLowerCase().trim()
+            }));
 
+            // Filtro por Pestaña
             if (filtroEstatus !== 'todos') {
-                filtrados = filtrados.filter(p => p.estatus === filtroEstatus);
+                filtrados = filtrados.filter(p => p.tempEstatus === filtroEstatus);
+            } else {
+                // En 'TODOS' no mostramos los entregados para no saturar
+                filtrados = filtrados.filter(p => p.tempEstatus !== 'entregado');
             }
 
+            // Filtro por Buscador
             if (query) {
                 filtrados = filtrados.filter(p => 
-                    p.nombre_cliente.toLowerCase().includes(query) || 
-                    p.id.toString().includes(query)
+                    (p.nombre_cliente || '').toLowerCase().includes(query) || 
+                    (p.id || '').toString().toLowerCase().includes(query)
                 );
             }
 
@@ -127,33 +110,40 @@
 
         function render(lista) {
             const container = document.getElementById('listaPedidos');
-            container.innerHTML = lista.length === 0 ? '<div class="loader">Sin pedidos pendientes</div>' : '';
+            if (lista.length === 0) {
+                container.innerHTML = '<div class="loader">No hay pedidos con este filtro</div>';
+                return;
+            }
+            container.innerHTML = '';
 
             lista.forEach(p => {
                 const card = document.createElement('div');
-                card.className = `pedido-card status-${p.estatus}`;
+                card.className = `pedido-card status-${p.tempEstatus}`;
                 
                 let btnAccion = '';
-                if (p.estatus === 'pendiente') btnAccion = `<button class="btn-main btn-atender" onclick="update('${p.id}','atendido')">LISTO EN BODEGA</button>`;
-                else if (p.estatus === 'atendido') btnAccion = `<button class="btn-main btn-rutear" onclick="update('${p.id}','en_ruta')">SUBIR A PARTNER 🚚</button>`;
-                else if (p.estatus === 'en_ruta') btnAccion = `<button class="btn-main btn-entregar" onclick="update('${p.id}','entregado')">ENTREGADO ✅</button>`;
+                if (p.tempEstatus === 'pendiente') 
+                    btnAccion = `<button class="btn-main btn-atender" onclick="update('${p.id}','atendido')">LISTO EN BODEGA</button>`;
+                else if (p.tempEstatus === 'atendido') 
+                    btnAccion = `<button class="btn-main btn-rutear" onclick="update('${p.id}','en_ruta')">SUBIR A PARTNER 🚚</button>`;
+                else if (p.tempEstatus === 'en_ruta') 
+                    btnAccion = `<button class="btn-main btn-entregar" onclick="update('${p.id}','entregado')">ENTREGADO ✅</button>`;
 
-                const msgWA = encodeURIComponent(`¡Hola ${p.nombre_cliente}! Soy de Nalgueada Express. Estoy procesando tu pedido.`);
-                const direccionMapa = p.direccion_entrega ? encodeURIComponent(p.direccion_entrega) : 'Tecamac';
-                
+                const msgWA = encodeURIComponent(`¡Hola ${p.nombre_cliente}! Soy de Nalgueada Express.`);
+                const dir = encodeURIComponent(p.direccion_entrega || 'Tecamac');
+
                 card.innerHTML = `
                     <div class="card-header">
                         <div>
-                            <span class="folio">#${p.id.toString().slice(-6)}</span>
-                            <div class="cliente-name">${p.nombre_cliente}</div>
+                            <span class="folio">#${(p.id || '').toString().slice(-8)}</span>
+                            <div class="cliente-name">${p.nombre_cliente || 'Sin nombre'}</div>
                         </div>
                         <div style="text-align:right">
-                            <b style="color:var(--azul); font-size:1.2rem">$${p.total_venta}</b>
+                            <b style="color:var(--azul)">$${p.total_venta || '0'}</b>
                         </div>
                     </div>
                     <div class="quick-actions">
                         <button class="btn-mini btn-wa" onclick="window.open('https://wa.me/${p.whatsapp_cliente}?text=${msgWA}')">📱 WHATSAPP</button>
-                        <button class="btn-mini btn-map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${direccionMapa}')">📍 MAPA</button>
+                        <button class="btn-mini btn-map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dir}')">📍 MAPA</button>
                     </div>
                     ${btnAccion}
                 `;
@@ -162,30 +152,27 @@
         }
 
         async function update(id, st) {
-            // Cambio visual inmediato (Optimistic Update)
-            const index = dataGlobal.findIndex(p => p.id == id);
-            if (index !== -1) {
-                const previoEstado = dataGlobal[index].estatus;
-                dataGlobal[index].estatus = st;
-                filtrar(); // Re-renderiza al instante
+            // Actualización optimista (UI rápida)
+            const item = dataGlobal.find(p => p.id == id);
+            if (item) {
+                item.estatus = st; 
+                item.estado = st; // Actualizamos ambos por si acaso
+                filtrar();
+            }
 
-                const { error } = await supabaseClient
-                    .from('pedidos')
-                    .update({ estatus: st })
-                    .eq('id', id);
+            // Intentar actualizar en Supabase (ambos campos para asegurar)
+            const { error } = await supabaseClient
+                .from('pedidos')
+                .update({ estatus: st, estado: st }) 
+                .eq('id', id);
 
-                if (error) {
-                    alert("Error al actualizar en base de datos");
-                    dataGlobal[index].estatus = previoEstado; // Revertir si falla
-                    filtrar();
-                }
+            if (error) {
+                console.error("Error Supabase:", error);
+                cargarData(); // Si falla, recargamos la verdad de la DB
             }
         }
 
-        // Carga inicial
         cargarData();
-
-        // Refresco automático suave cada 30 segundos
         setInterval(cargarData, 30000);
     </script>
 </body>
