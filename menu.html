@@ -16,7 +16,7 @@
         #orderTracker { 
             width: 100%; max-width: 400px; background: rgba(255,255,255,0.1); 
             border: 2px solid var(--amarillo); border-radius: 15px; padding: 15px; 
-            margin-bottom: 20px; display: none; /* Se activa solo si hay pedido */
+            margin-bottom: 20px; display: none; 
         }
         .tracker-title { font-size: 0.75rem; text-transform: uppercase; opacity: 0.8; margin-bottom: 5px; }
         .tracker-id { font-family: monospace; font-weight: bold; color: var(--amarillo); font-size: 1.1rem; }
@@ -45,8 +45,8 @@
         <p class="tracker-title">Estatus de tu entrega:</p>
         <div class="tracker-id" id="trackerID">FOLIO: #---</div>
         <div class="tracker-status">
-            <div class="status-dot"></div>
-            <span id="trackerText">Sincronizando con base de datos...</span>
+            <div id="trackerDot" class="status-dot"></div>
+            <span id="trackerText">Sincronizando logística...</span>
         </div>
     </div>
 
@@ -61,8 +61,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co'.trim();
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'.trim(); 
+        const S_URL = 'https://jyvboqhppybuiivwfvlr.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmJvcWhwcHlidWlpdndmdmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NTgyMTksImV4cCI6MjA5MTIzNDIxOX0.7Q44qXe73r7y2AAlJ997jakXJ7xVrgqDynMOZ6huyok'; 
         const supabaseClient = supabase.createClient(S_URL, S_KEY);
 
         const nombre = localStorage.getItem('cliente_nombre');
@@ -82,43 +82,65 @@
                 document.getElementById('btnIrCarrito').style.display = 'block';
             }
 
-            // 2. RASTREO PROFUNDO
+            // 2. BUSCAR PEDIDO ACTIVO
             try {
-                console.log("🛠️ Iniciando búsqueda para WhatsApp:", whatsapp.trim());
-                
-                const { data: pedidos, error, status } = await supabaseClient
+                const { data: pedidos, error } = await supabaseClient
                     .from('pedidos')
                     .select('*')
-                    .eq('whatsapp_cliente', whatsapp.trim());
+                    .eq('whatsapp_cliente', whatsapp.trim())
+                    .order('fecha_creacion', { ascending: false });
 
-                if (error) {
-                    console.error("❌ Error Supabase (" + status + "):", error.message);
-                    return;
-                }
+                if (error) throw error;
 
-                console.log("📦 Pedidos encontrados:", pedidos);
-
-                // Filtrar pedidos que no estén finalizados ni cancelados
                 const pedidoActivo = pedidos.find(p => p.estatus !== 'entregado' && p.estatus !== 'cancelado');
 
                 if (pedidoActivo) {
-                    console.log("✅ Renderizando Tracker para Folio:", pedidoActivo.id);
-                    document.getElementById('orderTracker').style.display = 'block';
-                    document.getElementById('trackerID').innerText = `FOLIO: #${pedidoActivo.id.slice(0,8)}`;
-                    
-                    const mensajesEstatus = {
-                        'pendiente': 'Estamos preparando tu pedido...',
-                        'atendido': 'Pedido listo en bodega',
-                        'en_ruta': '¡La Peugeot Partner va en camino!'
-                    };
-                    document.getElementById('trackerText').innerText = mensajesEstatus[pedidoActivo.estatus] || 'Procesando registro...';
-                } else {
-                    console.log("ℹ️ No hay pedidos activos para este usuario.");
+                    mostrarTracker(pedidoActivo);
+                    // 3. ACTIVAR ESCUCHA EN TIEMPO REAL
+                    suscribirRealtime(pedidoActivo.id);
                 }
-
             } catch (err) {
-                console.error("💥 Error crítico de ejecución:", err);
+                console.error("Error al cargar estatus:", err);
             }
+        }
+
+        function mostrarTracker(pedido) {
+            const mensajesEstatus = {
+                'pendiente': 'Estamos preparando tu pedido...',
+                'atendido': '¡Tu pedido ya está en Bodega! ✅',
+                'en_ruta': '¡La Peugeot Partner va en camino! 🚚'
+            };
+
+            const coloresDot = {
+                'pendiente': '#FDB813',
+                'atendido': '#4BB543',
+                'en_ruta': '#FFFFFF'
+            };
+
+            document.getElementById('orderTracker').style.display = 'block';
+            document.getElementById('trackerID').innerText = `FOLIO: #${pedido.id.toString().slice(-8)}`;
+            document.getElementById('trackerText').innerText = mensajesEstatus[pedido.estatus.toLowerCase()] || 'Procesando...';
+            document.getElementById('trackerDot').style.backgroundColor = coloresDot[pedido.estatus.toLowerCase()] || '#FDB813';
+        }
+
+        function suscribirRealtime(pedidoId) {
+            console.log("🔔 Suscrito a cambios para el pedido:", pedidoId);
+            
+            supabaseClient
+                .channel('seguimiento-cliente')
+                .on('postgres_changes', 
+                    { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'pedidos', 
+                        filter: `id=eq.${pedidoId}` 
+                    }, 
+                    (payload) => {
+                        console.log("✨ Cambio de estatus detectado:", payload.new.estatus);
+                        mostrarTracker(payload.new);
+                    }
+                )
+                .subscribe();
         }
 
         function cerrarSesion() {
@@ -126,7 +148,6 @@
             window.location.replace('identificacion.html');
         }
 
-        // Ejecución inmediata
         inicializarMenu();
     </script>
 </body>
