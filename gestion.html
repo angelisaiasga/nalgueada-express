@@ -29,7 +29,6 @@
         .btn-atender { background: #FFA500; }
         .btn-rutear { background: #4BB543; }
         .btn-entregar { background: var(--azul); }
-        .error-msg { background: #ffebee; color: #c62828; padding: 15px; border-radius: 10px; text-align: center; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -62,21 +61,56 @@
         let filtroEstatus = 'todos';
 
         async function cargarData() {
-            // ELIMINAMOS .order('created_at') para evitar el error de columna inexistente
-            const { data, error } = await supabaseClient
-                .from('pedidos')
-                .select('*');
-            
-            if (error) {
-                document.getElementById('listaPedidos').innerHTML = `
-                    <div class="error-msg">
-                        <strong>Error de conexión</strong><br>${error.message}
-                    </div>`;
-                return;
+            try {
+                // Petición limpia sin órdenes de columnas que no existen
+                const { data, error } = await supabaseClient.from('pedidos').select('*');
+                if (error) throw error;
+                dataGlobal = data || [];
+                filtrar();
+            } catch (e) {
+                document.getElementById('listaPedidos').innerHTML = `<div style="color:red; text-align:center;">Error: ${e.message}</div>`;
             }
+        }
 
-            dataGlobal = data || [];
+        function cambiarTab(estatus, btn) {
+            filtroEstatus = estatus;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
             filtrar();
         }
 
-        function cambiarTab(estatus,
+        function filtrar() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            let filtrados = dataGlobal.map(p => ({
+                ...p,
+                tempEstatus: (p.estatus || p.estado || 'pendiente').toLowerCase().trim()
+            }));
+
+            if (filtroEstatus !== 'todos') {
+                filtrados = filtrados.filter(p => p.tempEstatus === filtroEstatus);
+            } else {
+                filtrados = filtrados.filter(p => p.tempEstatus !== 'entregado');
+            }
+
+            if (query) {
+                filtrados = filtrados.filter(p => 
+                    (p.nombre_cliente || '').toLowerCase().includes(query) || 
+                    (p.id || '').toString().toLowerCase().includes(query)
+                );
+            }
+            render(filtrados);
+        }
+
+        function render(lista) {
+            const container = document.getElementById('listaPedidos');
+            if (lista.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">No hay pedidos activos</div>';
+                return;
+            }
+            container.innerHTML = '';
+
+            lista.forEach(p => {
+                const card = document.createElement('div');
+                card.className = `pedido-card status-${p.tempEstatus}`;
+                
+                let btnAccion = '';
