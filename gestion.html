@@ -57,7 +57,6 @@
 
         async function cargarData() {
             try {
-                // Usamos fecha_creacion para el orden tal como sale en tu tabla
                 const { data, error } = await supabaseClient
                     .from('pedidos')
                     .select('*')
@@ -80,7 +79,6 @@
 
         function filtrar() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            
             let filtrados = dataGlobal.map(p => ({
                 ...p,
                 normalEstatus: (p.estatus || 'pendiente').toLowerCase().trim()
@@ -126,7 +124,7 @@
                             <span style="font-size:0.7rem; color:#888;">#${(p.id || "").toString().slice(-8)}</span>
                             <div class="cliente-name">${p.nombre_cliente || 'Cliente'}</div>
                         </div>
-                        <b style="color:var(--azul)">$${p.total_venta || '0'}</b>
+                        <b style="color:var(--azul); font-size:1.2rem;">$${p.total_venta || '0'}</b>
                     </div>
                     <div class="quick-actions">
                         <a href="https://wa.me/${p.whatsapp_cliente}?text=${msgWA}" target="_blank" class="btn-mini" style="background:var(--verde)">WHATSAPP</a>
@@ -139,20 +137,24 @@
         }
 
         async function update(id, st) {
-            // Solo actualizamos 'estatus' que es la columna real
+            // ACTUALIZACIÓN CRÍTICA: Solo enviamos la columna 'estatus'
             const { error } = await supabaseClient
                 .from('pedidos')
                 .update({ estatus: st })
                 .eq('id', id);
 
             if (!error) {
-                cargarData();
+                // Actualizamos localmente para dar respuesta inmediata
+                const index = dataGlobal.findIndex(p => p.id === id);
+                if (index !== -1) dataGlobal[index].estatus = st;
+                filtrar();
             } else {
                 alert("Error al actualizar: " + error.message);
             }
         }
 
         cargarData();
+        // Recarga automática cada 30 segundos
         setInterval(cargarData, 30000);
     </script>
 </body>
