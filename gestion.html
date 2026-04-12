@@ -9,10 +9,10 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background-color: var(--gris); color: #333; padding: 15px; }
         header { text-align: center; padding: 10px 0; }
-        .search-box { width: 100%; max-width: 500px; margin: 10px auto; position: relative; }
+        .search-box { width: 100%; max-width: 500px; margin: 10px auto; }
         #searchInput { width: 100%; padding: 12px 20px; border-radius: 50px; border: 2px solid #ddd; outline: none; }
         .tabs { display: flex; justify-content: center; gap: 5px; margin-bottom: 20px; }
-        .tab { padding: 10px 15px; border-radius: 10px; background: #ddd; cursor: pointer; font-size: 0.8rem; font-weight: bold; border: none; flex: 1; max-width: 120px; }
+        .tab { padding: 10px 5px; border-radius: 10px; background: #ddd; cursor: pointer; font-size: 0.75rem; font-weight: bold; border: none; flex: 1; max-width: 100px; }
         .tab.active { background: var(--azul); color: white; }
         #listaPedidos { width: 100%; max-width: 500px; margin: 0 auto; }
         .pedido-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 8px solid #ccc; }
@@ -21,16 +21,15 @@
         .status-en_ruta { border-left-color: #4BB543; }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .cliente-name { font-size: 1.1rem; font-weight: bold; color: var(--azul); }
-        .folio { font-family: monospace; font-size: 0.75rem; color: #888; }
         .quick-actions { display: flex; gap: 10px; margin: 10px 0; }
-        .btn-mini { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.8rem; font-weight: bold; }
+        .btn-mini { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
         .btn-wa { background: var(--verde); color: white; }
         .btn-map { background: #4285F4; color: white; }
         .btn-main { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; color: white; margin-top: 5px; }
         .btn-atender { background: #FFA500; }
         .btn-rutear { background: #4BB543; }
         .btn-entregar { background: var(--azul); }
-        .loader { text-align: center; padding: 40px; color: var(--azul); font-weight: bold; }
+        .error-msg { background: #ffebee; color: #c62828; padding: 15px; border-radius: 10px; text-align: center; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -50,7 +49,7 @@
     </div>
 
     <div id="listaPedidos">
-        <div class="loader">Sincronizando logística...</div>
+        <div style="text-align:center; padding:20px;">Sincronizando logística...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -63,14 +62,21 @@
         let filtroEstatus = 'todos';
 
         async function cargarData() {
-            try {
-                const { data, error } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
-                if (error) throw error;
-                dataGlobal = data || [];
-                filtrar();
-            } catch (e) { 
-                document.getElementById('listaPedidos').innerHTML = "Error de conexión"; 
+            const { data, error } = await supabaseClient.from('pedidos').select('*').order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error("Error detallado:", error);
+                document.getElementById('listaPedidos').innerHTML = `
+                    <div class="error-msg">
+                        <strong>Error de conexión</strong><br>
+                        ${error.message}<br>
+                        <small>Revisa las políticas RLS en Supabase</small>
+                    </div>`;
+                return;
             }
+
+            dataGlobal = data || [];
+            filtrar();
         }
 
         function cambiarTab(estatus, btn) {
@@ -83,21 +89,17 @@
         function filtrar() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             
-            // NORMALIZACIÓN: Buscamos en 'estatus' o 'estado' y lo pasamos a minúsculas
             let filtrados = dataGlobal.map(p => ({
                 ...p,
                 tempEstatus: (p.estatus || p.estado || 'pendiente').toLowerCase().trim()
             }));
 
-            // Filtro por Pestaña
             if (filtroEstatus !== 'todos') {
                 filtrados = filtrados.filter(p => p.tempEstatus === filtroEstatus);
             } else {
-                // En 'TODOS' no mostramos los entregados para no saturar
                 filtrados = filtrados.filter(p => p.tempEstatus !== 'entregado');
             }
 
-            // Filtro por Buscador
             if (query) {
                 filtrados = filtrados.filter(p => 
                     (p.nombre_cliente || '').toLowerCase().includes(query) || 
@@ -111,7 +113,7 @@
         function render(lista) {
             const container = document.getElementById('listaPedidos');
             if (lista.length === 0) {
-                container.innerHTML = '<div class="loader">No hay pedidos con este filtro</div>';
+                container.innerHTML = '<div style="text-align:center; color:#888;">No hay pedidos activos</div>';
                 return;
             }
             container.innerHTML = '';
@@ -121,20 +123,17 @@
                 card.className = `pedido-card status-${p.tempEstatus}`;
                 
                 let btnAccion = '';
-                if (p.tempEstatus === 'pendiente') 
-                    btnAccion = `<button class="btn-main btn-atender" onclick="update('${p.id}','atendido')">LISTO EN BODEGA</button>`;
-                else if (p.tempEstatus === 'atendido') 
-                    btnAccion = `<button class="btn-main btn-rutear" onclick="update('${p.id}','en_ruta')">SUBIR A PARTNER 🚚</button>`;
-                else if (p.tempEstatus === 'en_ruta') 
-                    btnAccion = `<button class="btn-main btn-entregar" onclick="update('${p.id}','entregado')">ENTREGADO ✅</button>`;
+                if (p.tempEstatus === 'pendiente') btnAccion = `<button class="btn-main btn-atender" onclick="update('${p.id}','atendido')">LISTO EN BODEGA</button>`;
+                else if (p.tempEstatus === 'atendido') btnAccion = `<button class="btn-main btn-rutear" onclick="update('${p.id}','en_ruta')">SUBIR A PARTNER 🚚</button>`;
+                else if (p.tempEstatus === 'en_ruta') btnAccion = `<button class="btn-main btn-entregar" onclick="update('${p.id}','entregado')">ENTREGADO ✅</button>`;
 
                 const msgWA = encodeURIComponent(`¡Hola ${p.nombre_cliente}! Soy de Nalgueada Express.`);
-                const dir = encodeURIComponent(p.direccion_entrega || 'Tecamac');
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.direccion_entrega || 'Tecamac')}`;
 
                 card.innerHTML = `
                     <div class="card-header">
                         <div>
-                            <span class="folio">#${(p.id || '').toString().slice(-8)}</span>
+                            <span style="font-size:0.7rem; color:#888;">#${(p.id || '').toString().slice(-8)}</span>
                             <div class="cliente-name">${p.nombre_cliente || 'Sin nombre'}</div>
                         </div>
                         <div style="text-align:right">
@@ -143,7 +142,7 @@
                     </div>
                     <div class="quick-actions">
                         <button class="btn-mini btn-wa" onclick="window.open('https://wa.me/${p.whatsapp_cliente}?text=${msgWA}')">📱 WHATSAPP</button>
-                        <button class="btn-mini btn-map" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${dir}')">📍 MAPA</button>
+                        <button class="btn-mini btn-map" onclick="window.open('${mapsUrl}')">📍 MAPA</button>
                     </div>
                     ${btnAccion}
                 `;
@@ -152,24 +151,9 @@
         }
 
         async function update(id, st) {
-            // Actualización optimista (UI rápida)
-            const item = dataGlobal.find(p => p.id == id);
-            if (item) {
-                item.estatus = st; 
-                item.estado = st; // Actualizamos ambos por si acaso
-                filtrar();
-            }
-
-            // Intentar actualizar en Supabase (ambos campos para asegurar)
-            const { error } = await supabaseClient
-                .from('pedidos')
-                .update({ estatus: st, estado: st }) 
-                .eq('id', id);
-
-            if (error) {
-                console.error("Error Supabase:", error);
-                cargarData(); // Si falla, recargamos la verdad de la DB
-            }
+            const { error } = await supabaseClient.from('pedidos').update({ estatus: st, estado: st }).eq('id', id);
+            if (!error) cargarData();
+            else alert("Error al actualizar: " + error.message);
         }
 
         cargarData();
